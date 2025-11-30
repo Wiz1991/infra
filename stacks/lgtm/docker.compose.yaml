@@ -1,0 +1,71 @@
+services:
+  tempo:
+    image: grafana/tempo:latest
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - ./config/tempo/config.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    networks:
+      - observability
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:latest
+    command: [ "-config.file=/etc/loki/config.yaml" ]
+    volumes:
+      - ./config/loki/config.yaml:/etc/loki/config.yaml:ro
+      - loki-data:/loki
+    networks:
+      - observability
+    restart: unless-stopped
+
+  mimir:
+    image: grafana/mimir:latest
+    command: [ "-config.file=/etc/mimir.yaml" ]
+    volumes:
+      - ./config/mimir/config.yaml:/etc/mimir.yaml:ro
+      - mimir-data:/data
+    networks:
+      - observability
+    restart: unless-stopped
+
+  grafana-agent:
+    image: grafana/agent:latest
+    command: [ "-config.file=/etc/agent/config.yaml" ]
+    volumes:
+      - ./config/grafana_agent/config.yaml:/etc/agent/config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - grafana-agent-data:/tmp
+    networks:
+      - observability
+    depends_on:
+      - tempo
+      - loki
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - ./config/grafana/provisioning/datasources/lgtm.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./config/grafana/grafana.ini:/etc/grafana/grafana.ini:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3456:3000"
+    networks:
+      - observability
+    depends_on:
+      - tempo
+      - loki
+      - mimir
+    restart: unless-stopped
+
+networks:
+  observability:
+    driver: bridge
+
+volumes:
+  tempo-data:
+  loki-data:
+  mimir-data:
+  grafana-data:
+  grafana-agent-data:
