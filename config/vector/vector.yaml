@@ -1,16 +1,15 @@
 # Data directory for Vector state
 data_dir: /var/lib/vector
 
-# Docker logs source with hybrid filtering
+# Docker logs source - only collect from containers with vector.logs.enable=true
 sources:
   docker_logs:
     type: docker_logs
     docker_host: unix:///var/run/docker.sock
 
-    # Hybrid approach: collect all containers by default
-    # Containers can opt-out with label: vector.logs.exclude=true
-    exclude_labels:
-      - "vector.logs.exclude=true"
+    # Only collect logs from containers with this label
+    include_labels:
+      - "vector.logs.enable=true"
 
     # Auto-merge split messages >16kb
     auto_partial_merge: true
@@ -50,6 +49,20 @@ transforms:
         .labels.image_tag = "latest"
       }
 
+      # Extract OCI image labels (from Docker metadata)
+      # These come from LABEL directives in Dockerfile
+      if exists(.label."org.opencontainers.image.version") {
+        .labels.image_version = .label."org.opencontainers.image.version"
+      }
+
+      if exists(.label."org.opencontainers.image.revision") {
+        .labels.image_revision = .label."org.opencontainers.image.revision"
+      }
+
+      if exists(.label."org.opencontainers.image.created") {
+        .labels.image_created = .label."org.opencontainers.image.created"
+      }
+
       # Keep traceId in message for correlation (don't promote to label - high cardinality)
       # Loki/Grafana will extract it for trace linking
 
@@ -68,6 +81,9 @@ sinks:
       container_name: "{{ labels.container_name }}"
       container_image: "{{ labels.container_image }}"
       image_tag: "{{ labels.image_tag }}"
+      image_version: "{{ labels.image_version }}"
+      image_revision: "{{ labels.image_revision }}"
+      image_created: "{{ labels.image_created }}"
 
     # Encoding and compression
     encoding:
