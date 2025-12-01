@@ -33,10 +33,5 @@ schema_config:
         prefix: index_
         period: 24h
 
-# Enable structured metadata support
-limits_config:
-  allow_structured_metadata: true
-  volume_enabled: true
-
 analytics:
   reporting_enabled: false

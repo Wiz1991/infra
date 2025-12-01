@@ -12,7 +12,7 @@ services:
     restart: unless-stopped
 
   loki:
-    image: grafana/loki:3.2.0
+    image: grafana/loki:latest
     command: [ "-config.file=/etc/loki/config.yaml" ]
     volumes:
       - ../../config/loki/config.yaml:/etc/loki/config.yaml:ro
@@ -46,9 +46,7 @@ services:
     restart: unless-stopped
 
   grafana:
-    image: grafana/grafana:11.6.0
-    environment:
-      GF_INSTALL_PLUGINS: grafana-lokiexplore-app
+    image: grafana/grafana:latest
     volumes:
       - ../../config/grafana/provisioning/datasources/lgtm.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
       - ../../config/grafana/grafana.ini:/etc/grafana/grafana.ini:ro
