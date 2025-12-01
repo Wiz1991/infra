@@ -42,8 +42,8 @@ transforms:
       .labels.container_image = .image
 
       # Extract image tag from full image string (e.g., "nginx:1.21" -> "1.21")
-      image_parts = split(.image, ":")
-      if length(image_parts) > 1 {
+      image_parts = split(.image, ":") ?? []
+      if is_array(image_parts) && get(image_parts, [1]) != null {
         .labels.image_tag = image_parts[1]
       } else {
         .labels.image_tag = "latest"
