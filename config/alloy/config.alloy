@@ -42,12 +42,6 @@ discovery.relabel "docker_logs" {
     action = "replace"
   }
 
-  // Extract container name
-  rule {
-    source_labels = ["__meta_docker_container_name"]
-    target_label = "container"
-    action = "replace"
-  }
 }
 
 // Collect logs from discovered containers
