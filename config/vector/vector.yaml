@@ -21,52 +21,46 @@ transforms:
     inputs:
       - docker_logs
     source: |
-      # Parse JSON logs - if parsing fails, keep raw message
+      # Parse JSON logs and merge with container metadata
       parsed, err = parse_json(.message)
 
       if err == null {
-        # Extract env and level from JSON for labels
-        .labels.env = parsed.env
-        .labels.level = parsed.level
-
-        # Keep parsed JSON as the message (or extract specific field)
-        .message = encode_json(parsed)
-      } else {
-        # JSON parsing failed - mark with label and keep raw message
-        .labels.level = "unknown"
-        .labels.env = "unknown"
+        # Merge parsed JSON with container metadata at root
+        . = merge(., parsed) ?? .
       }
 
-      # Extract container metadata as labels
-      .labels.container_name = .container_name
-      .labels.container_image = .image
+      # Add container metadata fields to the JSON
+      .container_name = .container_name
+      .container_image = .image
 
       # Extract image tag from full image string (e.g., "nginx:1.21" -> "1.21")
       image_parts = split(.image, ":") ?? []
-      .labels.image_tag = get(image_parts, [1]) ?? "latest"
+      .image_tag = get(image_parts, [1]) ?? "latest"
 
       # Extract service name from image (e.g., "registry.com/ingestion:latest" -> "ingestion")
-      # Split by "/" to remove registry, then split by ":" to remove tag
       image_without_tag = get(image_parts, [0]) ?? .image
       path_parts = split(image_without_tag, "/") ?? []
-      .labels.service = get(path_parts, [-1]) ?? image_without_tag
+      .service = get(path_parts, [-1]) ?? image_without_tag
 
-      # Extract OCI image labels (from Docker metadata)
-      # These come from LABEL directives in Dockerfile
+      # Add OCI image labels to the JSON
       if exists(.label."org.opencontainers.image.version") {
-        .labels.image_version = .label."org.opencontainers.image.version"
+        .image_version = .label."org.opencontainers.image.version"
       }
 
       if exists(.label."org.opencontainers.image.revision") {
-        .labels.image_revision = .label."org.opencontainers.image.revision"
+        .image_revision = .label."org.opencontainers.image.revision"
       }
 
       if exists(.label."org.opencontainers.image.created") {
-        .labels.image_created = .label."org.opencontainers.image.created"
+        .image_created = .label."org.opencontainers.image.created"
       }
 
-      # Keep traceId in message for correlation (don't promote to label - high cardinality)
-      # Loki/Grafana will extract it for trace linking
+      # Ensure defaults for label extraction
+      .env = .env ?? "unknown"
+      .level = .level ?? "unknown"
+
+      # Re-encode as JSON for Loki
+      .message = encode_json(.) ?? .message
 
 # Loki sink
 sinks:
@@ -78,9 +72,18 @@ sinks:
 
     # Map labels to Loki labels
     labels:
-      env: "{{ labels.env }}"
-      level: "{{ labels.level }}"
-      service: "{{ labels.service }}"
+      env: "{{ env }}"
+      level: "{{ level }}"
+      service: "{{ service }}"
+
+    # Structured metadata (high cardinality container info)
+    structured_metadata:
+      image_version: "{{ image_version }}"
+      image_revision: "{{ image_revision }}"
+      image_created: "{{ image_created }}"
+      container_name: "{{ container_name }}"
+      container_image: "{{ image }}"
+      image_tag: "{{ image_tag }}"
 
     # Encoding and compression
     encoding:
