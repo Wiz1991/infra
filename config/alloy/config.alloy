@@ -16,6 +16,26 @@ loki.source.docker "default" {
   targets = discovery.docker.containers.targets
   forward_to = [loki.process.json_logs.receiver]
   refresh_interval = "5s"
+
+  relabel_rules {
+    // Extract OCI revision label as "revision"
+    rule {
+      source_labels = ["__meta_docker_container_label_org_opencontainers_image_revision"]
+      target_label = "revision"
+      action = "replace"
+    }
+
+    // Extract service name from image
+    // Format: r2-registry-production.randomanga.workers.dev/ingestion:latest
+    // Extract: ingestion
+    rule {
+      source_labels = ["__meta_docker_container_image"]
+      regex = ".*/([^:]+):.*"
+      replacement = "$1"
+      target_label = "service"
+      action = "replace"
+    }
+  }
 }
 
 // Process JSON logs
@@ -36,6 +56,13 @@ loki.process "json_logs" {
     values = {
       env   = "env",
       level = "level",
+    }
+  }
+
+  // Add revision as structured metadata (not a label to avoid cardinality issues)
+  stage.structured_metadata {
+    values = {
+      revision = "revision",
     }
   }
 
