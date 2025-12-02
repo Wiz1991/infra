@@ -21,28 +21,32 @@ transforms:
     inputs:
       - docker_logs
     source: |
-      # Parse JSON logs and merge with container metadata
+      # Save container metadata BEFORE parsing (so merge doesn't overwrite)
+      container_name_original = .container_name
+      image_original = .image
+
+      # Parse JSON from the message field
       parsed, err = parse_json(.message)
 
       if err == null {
-        # Merge parsed JSON with container metadata at root
+        # Merge parsed JSON fields to root level
         . = merge(., parsed) ?? .
       }
 
-      # Add container metadata fields to the JSON
-      .container_name = .container_name
-      .container_image = .image
+      # Restore and store container metadata (merge may have overwritten)
+      .container_name_meta = container_name_original
+      .container_image_meta = image_original
 
       # Extract image tag from full image string (e.g., "nginx:1.21" -> "1.21")
-      image_parts = split(.image, ":") ?? []
+      image_parts = split(image_original, ":") ?? []
       .image_tag = get(image_parts, [1]) ?? "latest"
 
-      # Extract service name from image (e.g., "registry.com/ingestion:latest" -> "ingestion")
-      image_without_tag = get(image_parts, [0]) ?? .image
+      # Extract service name from IMAGE (e.g., "registry.com/ingestion:latest" -> "ingestion")
+      image_without_tag = get(image_parts, [0]) ?? image_original
       path_parts = split(image_without_tag, "/") ?? []
       .service = get(path_parts, [-1]) ?? image_without_tag
 
-      # Add OCI image labels to the JSON
+      # Add OCI image labels to the root
       if exists(.label."org.opencontainers.image.version") {
         .image_version = .label."org.opencontainers.image.version"
       }
@@ -59,9 +63,6 @@ transforms:
       .env = .env ?? "unknown"
       .level = .level ?? "unknown"
 
-      # Re-encode as JSON for Loki
-      .message = encode_json(.) ?? .message
-
 # Loki sink
 sinks:
   loki:
@@ -74,15 +75,15 @@ sinks:
     labels:
       env: "{{ env }}"
       level: "{{ level }}"
-      service: "{{ service }}"
+      service_name: "{{ service }}"
 
     # Structured metadata (high cardinality container info)
     structured_metadata:
       image_version: "{{ image_version }}"
       image_revision: "{{ image_revision }}"
       image_created: "{{ image_created }}"
-      container_name: "{{ container_name }}"
-      container_image: "{{ image }}"
+      container_name: "{{ container_name_meta }}"
+      container_image: "{{ container_image_meta }}"
       image_tag: "{{ image_tag }}"
 
     # Encoding and compression
