@@ -45,6 +45,12 @@ transforms:
       image_parts = split(.image, ":") ?? []
       .labels.image_tag = get(image_parts, [1]) ?? "latest"
 
+      # Extract service name from image (e.g., "registry.com/ingestion:latest" -> "ingestion")
+      # Split by "/" to remove registry, then split by ":" to remove tag
+      image_without_tag = get(image_parts, [0]) ?? .image
+      path_parts = split(image_without_tag, "/") ?? []
+      .labels.service = get(path_parts, [-1]) ?? image_without_tag
+
       # Extract OCI image labels (from Docker metadata)
       # These come from LABEL directives in Dockerfile
       if exists(.label."org.opencontainers.image.version") {
@@ -74,12 +80,7 @@ sinks:
     labels:
       env: "{{ labels.env }}"
       level: "{{ labels.level }}"
-      container_name: "{{ labels.container_name }}"
-      container_image: "{{ labels.container_image }}"
-      image_tag: "{{ labels.image_tag }}"
-      image_version: "{{ labels.image_version }}"
-      image_revision: "{{ labels.image_revision }}"
-      image_created: "{{ labels.image_created }}"
+      service: "{{ labels.service }}"
 
     # Encoding and compression
     encoding:
