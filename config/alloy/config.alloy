@@ -21,8 +21,24 @@ discovery.relabel "docker_logs" {
     action = "replace"
   }
 
-  // For Docker Swarm: use swarm service name as service label
-  // Note: Alloy converts dots to underscores in label names
+  // Extract container name first (we'll use this as fallback)
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex = "/?(.+)"
+    replacement = "$1"
+    target_label = "container"
+    action = "replace"
+  }
+
+  // Set default service from container name
+  rule {
+    source_labels = ["container"]
+    target_label = "service"
+    action = "replace"
+  }
+
+  // For Docker Swarm: override with swarm service name
+  // Note: Alloy converts label dots to underscores
   // com.docker.swarm.service.name -> com_docker_swarm_service_name
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_swarm_service_name"]
@@ -32,7 +48,7 @@ discovery.relabel "docker_logs" {
     action = "replace"
   }
 
-  // For Docker Compose: use compose service name
+  // For Docker Compose: override with compose service name
   // com.docker.compose.service -> com_docker_compose_service
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
@@ -42,17 +58,7 @@ discovery.relabel "docker_logs" {
     action = "replace"
   }
 
-  // Fallback: extract from image name without tag
-  // Only applies if service label wasn't set by above rules
-  rule {
-    source_labels = ["__meta_docker_container_image"]
-    regex = "([^:]+):.*"
-    replacement = "$1"
-    target_label = "service"
-    action = "replace"
-  }
-
-  // Override with just service name if image matches registry pattern
+  // Try image-based extraction for custom registries
   // Format: r2-registry-production.randomanga.workers.dev/ingestion:latest
   // Extract: ingestion
   rule {
@@ -60,15 +66,6 @@ discovery.relabel "docker_logs" {
     regex = ".*/([^:]+):.*"
     replacement = "$1"
     target_label = "service"
-    action = "replace"
-  }
-
-  // Extract container name (strip leading /)
-  rule {
-    source_labels = ["__meta_docker_container_name"]
-    regex = "/?(.+)"
-    replacement = "$1"
-    target_label = "container"
     action = "replace"
   }
 
@@ -85,6 +82,11 @@ loki.source.docker "default" {
   host = "unix:///var/run/docker.sock"
   targets = discovery.relabel.docker_logs.output
   forward_to = [loki.process.json_logs.receiver]
+
+  // Ensure labels from relabeling are preserved
+  labels = {
+    job = "docker-logs",
+  }
 }
 
 // Process JSON logs
