@@ -25,17 +25,12 @@ transforms:
       container_name_original = .container_name
       image_original = .image
 
-      # Parse JSON from the message field
+      # Parse JSON from the message field and merge to root
       parsed, err = parse_json(.message)
 
-      if err == null {
-        # Merge parsed JSON fields to root level
-        . = merge(., parsed) ?? .
-
-        # Ensure .message is the text from parsed.message, not the original JSON string
-        if exists(parsed.message) {
-          .message = to_string(parsed.message)
-        }
+      if err == null && is_object(parsed) {
+        # Merge parsed JSON object into root
+        . = merge(., object!(parsed)) ?? .
       }
 
       # Restore and store container metadata (merge may have overwritten)
@@ -47,9 +42,17 @@ transforms:
       .image_tag = get(image_parts, [1]) ?? "latest"
 
       # Extract service name from IMAGE (e.g., "registry.com/ingestion:latest" -> "ingestion")
+      # DO THIS AFTER MERGE so it overwrites any service_name from the log
       image_without_tag = get(image_parts, [0]) ?? image_original
       path_parts = split(image_without_tag, "/") ?? []
       service_extracted = get(path_parts, [-1]) ?? image_without_tag
+
+      # Debug: store intermediate values to verify extraction
+      .debug_image_original = image_original
+      .debug_image_without_tag = image_without_tag
+      .debug_service_extracted = service_extracted
+
+      # Force set service_name to extracted value (overwrite anything from merge)
       .service_name = service_extracted
       .service = service_extracted
 

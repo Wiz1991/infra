@@ -33,5 +33,10 @@ schema_config:
         prefix: index_
         period: 24h
 
+limits_config:
+  # Only use explicit service_name label, don't auto-discover
+  discover_service_name:
+    - service_name
+
 analytics:
   reporting_enabled: false
