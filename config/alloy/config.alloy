@@ -26,21 +26,13 @@ discovery.relabel "docker_logs" {
     action = "replace"
   }
 
-  // ALWAYS extract service from image - First pass: match simple format (image_name:tag)
+  // Extract service from Swarm service name
+  // Format: moeradar-ingestion-mbmd2n -> moeradar-ingestion
+  // Then extract just the service part after the prefix
   rule {
-    source_labels = ["__meta_docker_container_image"]
-    regex = "^([^/:]+):.*$"
-    replacement = "$1"
-    target_label = "service"
-    action = "replace"
-  }
-
-  // ALWAYS extract service from image - Second pass: match registry format (/image_name:tag)
-  // This takes priority over the first pass
-  rule {
-    source_labels = ["__meta_docker_container_image"]
-    regex = "^.*/([^/:]+):.*$"
-    replacement = "$1"
+    source_labels = ["__meta_docker_container_label_com_docker_swarm_service_name"]
+    regex = "([^-]+)-([^-]+)-.*"
+    replacement = "$2"
     target_label = "service"
     action = "replace"
   }
@@ -120,17 +112,18 @@ prometheus.exporter.cadvisor "docker_metrics" {
 prometheus.relabel "docker_metrics" {
   forward_to = [prometheus.remote_write.mimir.receiver]
 
-  // ALWAYS extract service from image - First pass: match simple format (image_name:tag)
+  // Extract service from Swarm service name label
+  // Format: moeradar-ingestion-mbmd2n -> ingestion (second component)
   rule {
-    source_labels = ["image"]
-    regex = "^([^/:]+):.*$"
-    replacement = "$1"
+    source_labels = ["container_label_com_docker_swarm_service_name"]
+    regex = "([^-]+)-([^-]+)-.*"
+    replacement = "$2"
     target_label = "service"
     action = "replace"
   }
 
-  // ALWAYS extract service from image - Second pass: match registry format (/image_name:tag)
-  // This takes priority over the first pass
+  // Try to extract from image path if available
+  // Format: registry/ingestion:tag -> ingestion
   rule {
     source_labels = ["image"]
     regex = "^.*/([^/:]+):.*$"
