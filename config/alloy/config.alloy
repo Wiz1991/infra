@@ -1,3 +1,7 @@
+livedebugging {
+  enabled = true
+}
+
 // Docker container discovery
 // Only discovers containers with telemetry.enabled=true label
 // To add this label to a container, use: --label telemetry.enabled=true
@@ -54,11 +58,6 @@ loki.source.docker "default" {
   host = "unix:///var/run/docker.sock"
   targets = discovery.relabel.docker_logs.output
   forward_to = [loki.process.json_logs.receiver]
-
-  // Ensure labels from relabeling are preserved
-  labels = {
-    job = "docker-logs",
-  }
 }
 
 // Process JSON logs
