@@ -112,27 +112,15 @@ prometheus.exporter.cadvisor "docker_metrics" {
 prometheus.relabel "docker_metrics" {
   forward_to = [prometheus.remote_write.mimir.receiver]
 
-  // Extract service from Swarm service name label
-  // Format: moeradar-ingestion-mbmd2n -> ingestion (second component)
   rule {
-    source_labels = ["container_label_com_docker_swarm_service_name"]
+    source_labels = ["__meta_docker_container_label_com_docker_swarm_service_name"]
     regex = "([^-]+)-([^-]+)-.*"
     replacement = "$2"
     target_label = "service"
     action = "replace"
   }
 
-  // Try to extract from image path if available
-  // Format: registry/ingestion:tag -> ingestion
-  rule {
-    source_labels = ["image"]
-    regex = "^.*/([^/:]+):.*$"
-    replacement = "$1"
-    target_label = "service"
-    action = "replace"
-  }
-
-  // Copy service to service_name for consistency with logs
+  // Copy service to service_name for Grafana compatibility
   rule {
     source_labels = ["service"]
     target_label = "service_name"
@@ -144,7 +132,7 @@ prometheus.relabel "docker_metrics" {
 prometheus.scrape "cadvisor" {
   targets = prometheus.exporter.cadvisor.docker_metrics.targets
   forward_to = [prometheus.relabel.docker_metrics.receiver]
-  scrape_interval = "15s"
+  scrape_interval = "10s"
 }
 
 // OTLP receiver for traces and metrics
