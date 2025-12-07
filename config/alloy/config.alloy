@@ -128,6 +128,7 @@ prometheus.scrape "bull_monitor" {
     {"__address__" = "bull-monitor:3000"},
   ]
   scrape_interval = "5s"
+  scrape_timeout = "5s"
 
 
   forward_to = [prometheus.remote_write.mimir.receiver]
