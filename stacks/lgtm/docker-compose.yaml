@@ -80,6 +80,7 @@ services:
       PORT: 3000
     networks:
       - dokploy-network
+      - observability
 
 networks:
   observability:
