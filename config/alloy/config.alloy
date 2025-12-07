@@ -125,7 +125,7 @@ otelcol.exporter.prometheus "default" {
 
 prometheus.scrape "bull_monitor" {
   targets = [
-    "bull-monitor:6464"
+    "bull-monitor:6464",
   ]
   scrape_interval = "5s"
 
