@@ -411,7 +411,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "mimir",
       "fieldConfig": {
         "defaults": {},
         "overrides": []
@@ -520,7 +520,7 @@
       "type": "row"
     },
     {
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "mimir",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -590,7 +590,7 @@
       "type": "piechart"
     },
     {
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "mimir",
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -738,7 +738,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "mimir",
       "description": "",
       "fieldConfig": {
         "defaults": {},
@@ -836,7 +836,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "mimir",
       "description": "",
       "fieldConfig": {
         "defaults": {},
@@ -958,7 +958,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "mimir",
       "description": "",
       "fieldConfig": {
         "defaults": {},
@@ -1056,7 +1056,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "mimir",
       "description": "",
       "fieldConfig": {
         "defaults": {},
@@ -1178,7 +1178,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "mimir",
       "fieldConfig": {
         "defaults": {},
         "overrides": []
@@ -1280,7 +1280,7 @@
       {
         "allValue": null,
         "current": {},
-        "datasource": "${DS_PROMETHEUS}",
+        "datasource": "mimir",
         "definition": "label_values(jobs_completed_total,queue_prefix)",
         "description": null,
         "error": null,
