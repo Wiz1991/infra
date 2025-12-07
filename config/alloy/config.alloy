@@ -98,42 +98,6 @@ loki.write "loki_endpoint" {
   }
 }
 
-// Docker container metrics using cAdvisor
-// Collects CPU, memory, network, and disk metrics for all containers
-prometheus.exporter.cadvisor "docker_metrics" {
-  docker_host = "unix:///var/run/docker.sock"
-  storage_duration = "5m"
-
-  // Store container labels to preserve service names and other metadata
-  store_container_labels = true
-}
-
-// Relabel cAdvisor metrics to extract service label (same logic as logs)
-prometheus.relabel "docker_metrics" {
-  forward_to = [prometheus.remote_write.mimir.receiver]
-
-  rule {
-    source_labels = ["__meta_docker_container_label_com_docker_swarm_service_name"]
-    regex = "([^-]+)-([^-]+)-.*"
-    replacement = "$2"
-    target_label = "service"
-    action = "replace"
-  }
-
-  // Copy service to service_name for Grafana compatibility
-  rule {
-    source_labels = ["service"]
-    target_label = "service_name"
-    action = "replace"
-  }
-}
-
-// Scrape cAdvisor metrics
-prometheus.scrape "cadvisor" {
-  targets = prometheus.exporter.cadvisor.docker_metrics.targets
-  forward_to = [prometheus.relabel.docker_metrics.receiver]
-  scrape_interval = "10s"
-}
 
 // OTLP receiver for traces and metrics
 otelcol.receiver.otlp "default" {
@@ -158,6 +122,17 @@ otelcol.exporter.prometheus "default" {
   forward_to = [prometheus.remote_write.mimir.receiver]
 }
 
+
+prometheus.scrape "bull-monitor" {
+  targets = [
+    "bull-monitor:6464"
+  ]
+  scrape_interval = "5s"
+
+
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
 // Send metrics to Mimir
 prometheus.remote_write "mimir" {
   endpoint {
@@ -176,12 +151,3 @@ otelcol.exporter.otlp "tempo" {
 }
 
 
-prometheus.scrape "bull-monitor" {
-  targets = [
-    "bull-monitor:6464"
-  ]
-  scrape_interval = "5s"
-
-
-  forward_to = [prometheus.remote_write.mimir.receiver]
-}
