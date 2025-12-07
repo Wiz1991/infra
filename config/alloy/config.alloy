@@ -178,7 +178,7 @@ otelcol.exporter.otlp "tempo" {
 
 prometheus.scrape "bull-monitor" {
   targets = [
-    "bull-monitor:3000"
+    "bull-monitor:6464"
   ]
   scrape_interval = "5s"
 
