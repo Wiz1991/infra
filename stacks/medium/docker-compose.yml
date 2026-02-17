@@ -1,0 +1,101 @@
+services: 
+  zurg:
+    image: ghcr.io/debridmediamanager/zurg-testing:latest    
+    container_name: zurg
+    restart: unless-stopped
+    volumes:
+      - ./config/zurg/config.yml:/app/config.yml
+      - zurgdata:/app/data
+
+  rclone:
+    image: rclone/rclone:latest
+    container_name: rclone
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Warsaw
+      PUID: 1000
+      PGID: 1000
+    volumes:
+      - /mnt/debrid:/data:rshared
+      - ./config/rclone.conf:/config/rclone/rclone.conf
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    devices:
+      - /dev/fuse:/dev/fuse:rwm
+    depends_on:
+      - zurg
+    command: "mount zurg: /data --allow-other --allow-non-empty --dir-cache-time 10s --vfs-cache-mode full"
+
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    network_mode: host
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+      - VERSION=docker
+    volumes:
+      - /srv/docker/plex:/config
+    restart: unless-stopped
+    depends_on:
+      - rclone
+
+
+  cli_debrid:
+    image: godver3/cli_debrid:dev
+    container_name: cli_debrid
+    ports:
+      - "5000:5000"
+    volumes:
+      - /srv/docker/cli_debrid/db_content:/user/db_content
+      - /srv/docker/cli_debrid/config:/user/config
+      - /srv/docker/cli_debrid/logs:/user/logs
+      - /mnt/debrid:/mnt
+      - /srv/docker/cli_debrid/phalanx_db_hyperswarm/autobase_storage_v4:/app/phalanx_db_hyperswarm/autobase_storage_v4
+    environment:
+      - TZ=Europe/Warsaw
+      - PUID=1000
+      - PGID=1000
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    depends_on:
+      - rclone
+      - zurg
+  
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+    volumes:
+      - /srv/docker/bazarr/config:/config
+      - /mnt/debrid:/mnt 
+    ports:
+      - 6767:6767
+    restart: unless-stopped
+    depends_on:
+      - cli_debrid
+
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+    volumes:
+      - /srv/docker/prowlarr/config:/config
+    ports:
+      - 9696:9696
+    restart: unless-stopped
+
+volumes:
+  zurgdata:
