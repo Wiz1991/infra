@@ -16,7 +16,7 @@ services:
       - traefik.http.routers.profilarr.middlewares=security-headers@file
       - traefik.http.services.profilarr.loadbalancer.server.port=6868
     healthcheck:
-      test: curl -f http://localhost:6868/ || exit 1
+      test: wget --no-verbose --tries=1 --spider http://localhost:6868/ || exit 1
       interval: 15s
       timeout: 5s
       retries: 5

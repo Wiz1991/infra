@@ -14,7 +14,7 @@ services:
       - traefik.http.routers.newtarr.middlewares=security-headers@file
       - traefik.http.services.newtarr.loadbalancer.server.port=9705
     healthcheck:
-      test: curl -f http://localhost:9705/ || exit 1
+      test: wget --no-verbose --tries=1 --spider http://localhost:9705/ || exit 1
       interval: 15s
       timeout: 5s
       retries: 5
