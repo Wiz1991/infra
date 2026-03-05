@@ -23,11 +23,12 @@ Media server stack on Docker Compose with Traefik + Cloudflare DNS for TLS.
 cp .env.example .env
 # fill in your values (see table below)
 
+# create appdata dir with correct ownership
+sudo mkdir -p /srv/homelab
+sudo chown 1000:1000 /srv/homelab
+
 # set up decypharr with your RealDebrid keys
 ./scripts/update-debrid-key.sh
-
-# create acme cert storage
-mkdir -p ${APPDATA_DIR}/traefik/acme
 
 # start everything
 docker compose up -d

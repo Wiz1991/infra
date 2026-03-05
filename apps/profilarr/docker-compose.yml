@@ -1,6 +1,6 @@
 services:
   profilarr:
-    image: ghcr.io/dictionarry-hub/profilarr:v1.1.4
+    image: santiagosayshey/profilarr:v1.1.4
     container_name: profilarr
     volumes:
       - ${APPDATA_DIR}/profilarr:/config
