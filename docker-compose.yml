@@ -7,6 +7,7 @@ include:
   - apps/prowlarr/docker-compose.yml
   - apps/radarr/docker-compose.yml
   - apps/seerr/docker-compose.yml
+  - apps/newtarr/docker-compose.yml
   - apps/sonarr_anime/docker-compose.yml
   - apps/sonarr_tv/docker-compose.yml
 
@@ -45,6 +46,11 @@ services:
       traefik:
         condition: service_healthy
       prowlarr:
+        condition: service_healthy
+
+  newtarr:
+    depends_on:
+      traefik:
         condition: service_healthy
 
   bazarr:

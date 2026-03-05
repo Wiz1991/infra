@@ -1,0 +1,28 @@
+services:
+  newtarr:
+    image: ghcr.io/elfhosted/newtarr:latest
+    container_name: newtarr
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - ${APPDATA_DIR}/newtarr:/config
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.newtarr.rule=Host(`newtarr.${DOMAIN_NAME}`)
+      - traefik.http.routers.newtarr.entrypoints=websecure
+      - traefik.http.routers.newtarr.tls.certresolver=letsencrypt
+      - traefik.http.routers.newtarr.middlewares=security-headers@file
+      - traefik.http.services.newtarr.loadbalancer.server.port=9705
+    healthcheck:
+      test: curl -f http://localhost:9705/ || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - traefik
+    restart: unless-stopped
+
+networks:
+  traefik:
+    external: true
