@@ -1,0 +1,9 @@
+include:
+  - apps/bazarr/docker-compose.yml
+  - apps/decypharr/docker-compose.yml
+  - apps/plex/docker-compose.yml
+  - apps/profilarr/docker-compose.yml
+  - apps/prowlarr/docker-compose.yml
+  - apps/radarr/docker-compose.yml
+  - apps/sonarr_anime/docker-compose.yml
+  - apps/sonarr_tv/docker-compose.yml

@@ -1,0 +1,21 @@
+services:
+  decypharr:
+    image: ghcr.io/sirrobot01/decypharr:latest
+    container_name: decypharr
+    ports:
+      - "8282:8282"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - UMASK=002
+    volumes:
+      - /mnt:/mnt:rshared
+      - ${APPDATA_DIR}/decypharr:/app
+    devices:
+      - /dev/fuse:/dev/fuse:rwm
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    restart: unless-stopped
