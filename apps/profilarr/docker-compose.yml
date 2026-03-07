@@ -1,4 +1,30 @@
 services:
+  profilarr_anime:
+    image: santiagosayshey/profilarr:v1.1.4
+    container_name: profilarr_anime
+    volumes:
+      - ${APPDATA_DIR}/profilarr_anime:/config
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.profilarr_anime.rule=Host(`anime.profilarr.${DOMAIN_NAME}`)
+      - traefik.http.routers.profilarr_anime.entrypoints=websecure
+      - traefik.http.routers.profilarr_anime.tls.certresolver=letsencrypt
+      - traefik.http.routers.profilarr_anime.middlewares=security-headers@file
+      - traefik.http.services.profilarr_anime.loadbalancer.server.port=6868
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:6868/ || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - traefik
+    restart: unless-stopped
+
   profilarr:
     image: santiagosayshey/profilarr:v1.1.4
     container_name: profilarr
