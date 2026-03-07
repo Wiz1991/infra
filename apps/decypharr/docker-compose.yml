@@ -8,7 +8,7 @@ services:
       - TZ=${TZ}
       - UMASK=002
     volumes:
-      - /mnt:/mnt:rshared
+      - /mnt/media:/mnt:rshared
       - ${APPDATA_DIR}/decypharr:/app
     devices:
       - /dev/fuse:/dev/fuse:rwm

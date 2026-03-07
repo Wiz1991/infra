@@ -8,7 +8,7 @@ services:
       - TZ=${TZ}
     volumes:
       - ${APPDATA_DIR}/sonarr/anime:/config
-      - /mnt:/mnt:rshared
+      - /mnt/media:/mnt:rslave
     labels:
       - traefik.enable=true
       - traefik.http.routers.sonarr_anime.rule=Host(`anime.sonarr.${DOMAIN_NAME}`)
@@ -36,7 +36,7 @@ services:
       - TZ=${TZ}
     volumes:
       - ${APPDATA_DIR}/sonarr/tv:/config
-      - /mnt:/mnt:rshared
+      - /mnt/media:/mnt:rslave
     labels:
       - traefik.enable=true
       - traefik.http.routers.sonarr_tv.rule=Host(`sonarr.${DOMAIN_NAME}`)
