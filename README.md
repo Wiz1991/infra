@@ -24,22 +24,38 @@ Media server stack on Docker Compose with Traefik + Cloudflare DNS for TLS.
 ```bash
 cp .env.example .env
 # fill in your values (see table below)
+set -a && source .env && set +a
 
-# create appdata dir with correct ownership
-sudo mkdir -p /srv/homelab
-sudo chown 1000:1000 /srv/homelab
+mkdir -p /mnt/{media,symlinks}
+chown -R ${PUID}:${PGID} /mnt/media
+chown -R ${PUID}:${PGID} /mnt/symlinks
 
-# set up decypharr with your RealDebrid keys
-sudo chmod +x ./scripts/update-debrid-key.sh
-./scripts/update-debrid-key.sh
+sudo mkdir -p ${APPDATA_DIR}
+sudo chown ${PUID}:${PGID} ${APPDATA_DIR}
 
 docker network create traefik
 
-# start everything
+# start everything — containers need to run once to generate default configs
 docker compose up -d
 ```
 
 Requires Docker Engine with Compose v2.20+, a Cloudflare-managed domain, and `jq` for the debrid script.
+
+## Post-startup configuration
+
+Some services generate their default config on first launch. The scripts below overwrite those defaults with the correct settings, so they must run **after** `docker compose up -d` and the containers have finished initializing.
+
+```bash
+set -a && source .env && set +a
+
+# set up decypharr with your RealDebrid keys
+./scripts/update-debrid-key.sh
+docker compose restart decypharr
+
+# install custom Prowlarr indexers (torrentio, zilean, etc.)
+./scripts/install-prowlarr-indexers.sh
+docker compose restart prowlarr
+```
 
 ## Environment variables
 
@@ -47,6 +63,10 @@ Requires Docker Engine with Compose v2.20+, a Cloudflare-managed domain, and `jq
 | Variable           | What it's for                                                            |
 | ------------------ | ------------------------------------------------------------------------ |
 | `APPDATA_DIR`      | Base path for all app config volumes (e.g. `/srv/homelab`)               |
+| `PUID`             | User ID for container file ownership                                     |
+| `PGID`             | Group ID for container file ownership                                    |
+| `TZ`               | Timezone (e.g. `Europe/Paris`)                                           |
+| `LOG_LEVEL`        | Log verbosity for services that support it (e.g. `info`)                 |
 | `DOMAIN_NAME`      | Your domain — used in Traefik routing rules                              |
 | `ACME_EMAIL`       | Let's Encrypt registration email                                         |
 | `CF_DNS_API_TOKEN` | Cloudflare API token (Zone > DNS > Edit)                                 |
