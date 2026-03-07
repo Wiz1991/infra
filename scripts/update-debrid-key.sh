@@ -1,10 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_DIR="${SCRIPT_DIR}/../apps/decypharr/config"
-EXAMPLE_FILE="${CONFIG_DIR}/config.example.json"
-CONFIG_FILE="${CONFIG_DIR}/config.json"
+if [[ ! -f ".env" ]]; then
+  echo "Error: .env file not found in current directory" >&2
+  echo "Run this script from the project root." >&2
+  exit 1
+fi
+
+set -a
+source .env
+set +a
+
+EXAMPLE_FILE="./apps/decypharr/config/config.example.json"
+CONFIG_FILE="${APPDATA_DIR}/decypharr/config.json"
 COMMAND="${1:-}"
 
 if ! command -v jq &>/dev/null; then
