@@ -3,13 +3,12 @@ services:
     image: ipromknight/zilean:latest
     restart: unless-stopped
     container_name: zilean
-    user: "${PUID}:${PGID}"
     tty: true
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       Zilean__EnableDashboard: "true"
     volumes:
-      - ${APPDATA_DIR}/zilean:/app/data
+      - zilean_data:/app/data
       - zilean_tmp:/tmp
     labels:
       - traefik.enable=true
@@ -51,6 +50,7 @@ services:
 
 
 volumes:
+  zilean_data:
   zilean_tmp:
   postgres_data_zilean:
 
