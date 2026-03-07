@@ -7,6 +7,7 @@ services:
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       Zilean__EnableDashboard: "true"
+      Zilean__Database__ConnectionString: "Host=zilean_postgres;Database=zilean;Username=postgres;Password=${POSTGRES_PASSWORD};Include Error Detail=true;Timeout=30;CommandTimeout=3600;"
     volumes:
       - zilean_data:/app/data
       - zilean_tmp:/tmp
