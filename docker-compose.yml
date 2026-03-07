@@ -10,6 +10,7 @@ include:
   - apps/newtarr/docker-compose.yml
   - apps/sonarr/docker-compose.yml
   - apps/byparr/docker-compose.yml
+  - apps/zilean/docker-compose.yml
 
 services:
   plex:
