@@ -9,6 +9,13 @@ services:
     volumes:
       - ${APPDATA_DIR}/zilean:/app/data
       - zilean_tmp:/tmp
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.zilean.rule=Host(`zilean.${DOMAIN_NAME}`)
+      - traefik.http.routers.zilean.entrypoints=websecure
+      - traefik.http.routers.zilean.tls.certresolver=letsencrypt
+      - traefik.http.routers.zilean.middlewares=security-headers@file
+      - traefik.http.services.zilean.loadbalancer.server.port=8181
     healthcheck:
       test: curl --connect-timeout 10 --silent --show-error --fail http://localhost:8181/healthchecks/ping
       timeout: 60s
