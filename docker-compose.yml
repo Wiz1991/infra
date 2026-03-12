@@ -1,5 +1,6 @@
 include:
   - apps/traefik/docker-compose.yml
+  - apps/cloudflared/docker-compose.yml
   - apps/bazarr/docker-compose.yml
   - apps/decypharr/docker-compose.yml
   - apps/plex/docker-compose.yml
@@ -45,14 +46,7 @@ services:
       prowlarr:
         condition: service_healthy
 
-  sonarr_anime:
-    depends_on:
-      traefik:
-        condition: service_healthy
-      prowlarr:
-        condition: service_healthy
-
-  sonarr_tv:
+  sonarr:
     depends_on:
       traefik:
         condition: service_healthy
