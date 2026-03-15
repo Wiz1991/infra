@@ -1,33 +1,33 @@
 # *arr apps (radarr, sonarr, sonarr_anime, prowlarr)
-**/logs/
-**/UpdateLogs/
-**/MediaCover/
-**/asp/
-**/Backups/
+**/logs/**
+**/UpdateLogs/**
+**/MediaCover/**
+**/asp/**
+**/Backups/**
 
 # Plex
-**/Cache/
-**/Crash Reports/
-**/Diagnostics/
-**/Updates/
+**/Cache/**
+**/Crash Reports/**
+**/Diagnostics/**
+**/Updates/**
 **/*.bif
 
 # Bazarr
-**/bazarr/**/cache/
-**/bazarr/**/log/
-**/bazarr/**/backup/
-**/bazarr/**/restore/
+**/bazarr/**/cache/**
+**/bazarr/**/log/**
+**/bazarr/**/backup/**
+**/bazarr/**/restore/**
 
 # Seerr
-**/seerr/**/cache/
-**/seerr/**/logs/
+**/seerr/**/cache/**
+**/seerr/**/logs/**
 
 # Tautulli
-**/tautulli/**/cache/
-**/tautulli/**/backups/
+**/tautulli/**/cache/**
+**/tautulli/**/backups/**
 
 # Traefik access logs
-**/traefik/logs/
+**/traefik/logs/**
 
 # General
 **/logs.db
