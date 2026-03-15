@@ -16,6 +16,7 @@ include:
   - apps/byparr/docker-compose.yml
   - apps/zilean/docker-compose.yml
   - apps/restic/docker-compose.yml
+  - apps/adguard/docker-compose.yml
 
 services:
   loki:
@@ -100,6 +101,11 @@ services:
         condition: service_healthy
       plex:
         condition: service_started
+
+  adguard:
+    depends_on:
+      traefik:
+        condition: service_healthy
 
   seerr:
     depends_on:

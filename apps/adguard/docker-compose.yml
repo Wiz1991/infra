@@ -1,0 +1,33 @@
+services:
+  adguard:
+    image: adguard/adguardhome:v0.107.55
+    container_name: adguard
+    environment:
+      - TZ=${TZ}
+    ports:
+      - "${TAILSCALE_IP}:53:53/tcp"
+      - "${TAILSCALE_IP}:53:53/udp"
+    volumes:
+      - ${APPDATA_DIR}/adguard/work:/opt/adguardhome/work
+      - ${APPDATA_DIR}/adguard/conf:/opt/adguardhome/conf
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.adguard.rule=Host(`adguard.${DOMAIN_NAME}`)
+      - traefik.http.routers.adguard.entrypoints=websecure
+      - traefik.http.routers.adguard.tls.certresolver=letsencrypt
+      - traefik.http.routers.adguard.service=adguard
+      - traefik.http.routers.adguard.middlewares=security-headers@file
+      - traefik.http.services.adguard.loadbalancer.server.port=3000
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3000"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 15s
+    networks:
+      - traefik
+    restart: unless-stopped
+
+networks:
+  traefik:
+    name: traefik
