@@ -1,5 +1,8 @@
 include:
   - apps/traefik/docker-compose.yml
+  - apps/loki/docker-compose.yml
+  - apps/alloy/docker-compose.yml
+  - apps/grafana/docker-compose.yml
   - apps/bazarr/docker-compose.yml
   - apps/decypharr/docker-compose.yml
   - apps/plex/docker-compose.yml
@@ -14,6 +17,23 @@ include:
   - apps/zilean/docker-compose.yml
 
 services:
+  loki:
+    depends_on:
+      traefik:
+        condition: service_healthy
+
+  alloy:
+    depends_on:
+      loki:
+        condition: service_healthy
+
+  grafana:
+    depends_on:
+      traefik:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+
   plex:
     depends_on:
       traefik:
