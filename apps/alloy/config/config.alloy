@@ -33,10 +33,6 @@ loki.process "pipeline" {
     expression = "(?i)(?:level|lvl)[=: ]*(?P<level>\\w+)"
   }
 
-  stage.regex {
-    expression = "\\b(?P<level>(?:TRACE|DEBUG|INFO|WARN(?:ING)?|ERROR|FATAL|CRITICAL|PANIC))\\b"
-  }
-
   stage.labels {
     values = { level = "" }
   }
