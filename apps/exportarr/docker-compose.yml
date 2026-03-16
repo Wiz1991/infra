@@ -1,0 +1,76 @@
+services:
+  exportarr_sonarr:
+    image: ghcr.io/onedr0p/exportarr:v2.1.0
+    container_name: exportarr_sonarr
+    command: sonarr
+    environment:
+      - PORT=9707
+      - URL=http://sonarr:8989
+      - APIKEY=${SONARR_API_KEY}
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:9707/healthz || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - traefik
+    restart: unless-stopped
+
+  exportarr_radarr:
+    image: ghcr.io/onedr0p/exportarr:v2.1.0
+    container_name: exportarr_radarr
+    command: radarr
+    environment:
+      - PORT=9708
+      - URL=http://radarr:7878
+      - APIKEY=${RADARR_API_KEY}
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:9708/healthz || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - traefik
+    restart: unless-stopped
+
+  exportarr_prowlarr:
+    image: ghcr.io/onedr0p/exportarr:v2.1.0
+    container_name: exportarr_prowlarr
+    command: prowlarr
+    environment:
+      - PORT=9709
+      - URL=http://prowlarr:9696
+      - APIKEY=${PROWLARR_API_KEY}
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:9709/healthz || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - traefik
+    restart: unless-stopped
+
+  exportarr_bazarr:
+    image: ghcr.io/onedr0p/exportarr:v2.1.0
+    container_name: exportarr_bazarr
+    command: bazarr
+    environment:
+      - PORT=9710
+      - URL=http://bazarr:6767
+      - APIKEY=${BAZARR_API_KEY}
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:9710/healthz || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - traefik
+    restart: unless-stopped
+
+networks:
+  traefik:
+    external: true
