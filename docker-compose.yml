@@ -18,6 +18,7 @@ include:
   - apps/prometheus/docker-compose.yml
   - apps/exportarr/docker-compose.yml
   - apps/restic/docker-compose.yml
+  - apps/adguard/docker-compose.yml
 
 services:
   loki:
@@ -105,6 +106,11 @@ services:
       plex:
         condition: service_started
 
+  adguard:
+    depends_on:
+      traefik:
+        condition: service_healthy
+
   prometheus:
     depends_on:
       traefik:
@@ -129,6 +135,7 @@ services:
     depends_on:
       bazarr:
         condition: service_healthy
+
 
   seerr:
     depends_on:
