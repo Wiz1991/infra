@@ -1,5 +1,6 @@
 include:
   - apps/traefik/docker-compose.yml
+  - apps/cloudflared/docker-compose.yml
   - apps/loki/docker-compose.yml
   - apps/alloy/docker-compose.yml
   - apps/grafana/docker-compose.yml
@@ -72,14 +73,7 @@ services:
       prowlarr:
         condition: service_healthy
 
-  sonarr_anime:
-    depends_on:
-      traefik:
-        condition: service_healthy
-      prowlarr:
-        condition: service_healthy
-
-  sonarr_tv:
+  sonarr:
     depends_on:
       traefik:
         condition: service_healthy
@@ -95,10 +89,9 @@ services:
     depends_on:
       radarr:
         condition: service_healthy
-      sonarr_anime:
+      sonarr:
         condition: service_healthy
-      sonarr_tv:
-        condition: service_healthy
+
 
   tautulli:
     depends_on:
@@ -142,9 +135,7 @@ services:
     depends_on:
       radarr:
         condition: service_healthy
-      sonarr_anime:
-        condition: service_healthy
-      sonarr_tv:
+      sonarr:
         condition: service_healthy
 
   anibridge:
