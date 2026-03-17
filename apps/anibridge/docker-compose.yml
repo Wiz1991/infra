@@ -1,6 +1,6 @@
 services:
   anibridge:
-    image: ghcr.io/anibridge/anibridge:v2
+    image: ghcr.io/anibridge/anibridge:develop
     container_name: anibridge
     environment:
       - PUID=${PUID}
