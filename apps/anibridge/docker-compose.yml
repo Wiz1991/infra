@@ -1,0 +1,31 @@
+services:
+  anibridge:
+    image: ghcr.io/anibridge/anibridge:v2
+    container_name: anibridge
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=022
+      - TZ=${TZ}
+    volumes:
+      - ${APPDATA_DIR}/anibridge:/config
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.anibridge.rule=Host(`anibridge.${DOMAIN_NAME}`)
+      - traefik.http.routers.anibridge.entrypoints=websecure
+      - traefik.http.routers.anibridge.tls.certresolver=letsencrypt
+      - traefik.http.routers.anibridge.middlewares=security-headers@file
+      - traefik.http.services.anibridge.loadbalancer.server.port=4848
+    healthcheck:
+      test: curl -f http://localhost:4848 || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - traefik
+    restart: unless-stopped
+
+networks:
+  traefik:
+    external: true

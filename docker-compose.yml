@@ -1,6 +1,9 @@
 include:
   - apps/traefik/docker-compose.yml
   - apps/cloudflared/docker-compose.yml
+  - apps/loki/docker-compose.yml
+  - apps/alloy/docker-compose.yml
+  - apps/grafana/docker-compose.yml
   - apps/bazarr/docker-compose.yml
   - apps/decypharr/docker-compose.yml
   - apps/plex/docker-compose.yml
@@ -13,8 +16,32 @@ include:
   - apps/tautulli/docker-compose.yml
   - apps/byparr/docker-compose.yml
   - apps/zilean/docker-compose.yml
+  - apps/prometheus/docker-compose.yml
+  - apps/exportarr/docker-compose.yml
+  - apps/restic/docker-compose.yml
+  - apps/adguard/docker-compose.yml
+  - apps/anibridge/docker-compose.yml
 
 services:
+  loki:
+    depends_on:
+      traefik:
+        condition: service_healthy
+
+  alloy:
+    depends_on:
+      loki:
+        condition: service_healthy
+
+  grafana:
+    depends_on:
+      traefik:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+
   plex:
     depends_on:
       traefik:
@@ -73,9 +100,45 @@ services:
       plex:
         condition: service_started
 
+  adguard:
+    depends_on:
+      traefik:
+        condition: service_healthy
+
+  prometheus:
+    depends_on:
+      traefik:
+        condition: service_healthy
+
+  exportarr_sonarr:
+    depends_on:
+      sonarr:
+        condition: service_healthy
+
+  exportarr_radarr:
+    depends_on:
+      radarr:
+        condition: service_healthy
+
+  exportarr_prowlarr:
+    depends_on:
+      prowlarr:
+        condition: service_healthy
+
+  exportarr_bazarr:
+    depends_on:
+      bazarr:
+        condition: service_healthy
+
+
   seerr:
     depends_on:
       radarr:
         condition: service_healthy
       sonarr:
+        condition: service_healthy
+
+  anibridge:
+    depends_on:
+      traefik:
         condition: service_healthy

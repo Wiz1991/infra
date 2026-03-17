@@ -1,0 +1,33 @@
+services:
+  alloy:
+    image: grafana/alloy:v1.14.0
+    container_name: alloy
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+      - --server.http.listen-addr=0.0.0.0:12345
+    volumes:
+      - ./config/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy_data:/var/lib/alloy/data
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:12345/-/ready || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      loki:
+        condition: service_healthy
+    networks:
+      - traefik
+    restart: unless-stopped
+
+volumes:
+  alloy_data:
+
+networks:
+  traefik:
+    external: true

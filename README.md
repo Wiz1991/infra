@@ -17,6 +17,7 @@ Media server stack on Docker Compose with Traefik + Cloudflare DNS for TLS.
 | seerr          | `seerr.*`        | 5055            | Media requests           |
 | decypharr      | `decypharr.*`    | 8282            | Debrid + rclone mounts   |
 | profilarr      | `profilarr.*`    | 6868            | Quality profile sync     |
+| anibridge      | `anibridge.*`    | 4848            | Anime list sync          |
 
 
 ## Setup
