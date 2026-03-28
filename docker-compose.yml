@@ -1,5 +1,6 @@
 include:
   - apps/pgvector/docker-compose.yml
+  - apps/redis/docker-compose.yml
   - apps/traefik/docker-compose.yml
   - apps/cloudflared/docker-compose.yml
   - apps/loki/docker-compose.yml
@@ -134,6 +135,11 @@ services:
   postgres_exporter:
     depends_on:
       pgvector:
+        condition: service_healthy
+
+  redis_exporter:
+    depends_on:
+      redis:
         condition: service_healthy
 
   seerr:
