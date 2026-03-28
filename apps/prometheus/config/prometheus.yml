@@ -27,3 +27,8 @@ scrape_configs:
     static_configs:
       - targets:
           - exportarr_bazarr:9710
+
+  - job_name: postgres
+    static_configs:
+      - targets:
+          - postgres_exporter:9187

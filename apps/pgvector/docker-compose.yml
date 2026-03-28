@@ -1,0 +1,45 @@
+services:
+  pgvector:
+    image: pgvector/pgvector:pg17-bookworm
+    container_name: pgvector
+    restart: unless-stopped
+    shm_size: 4g
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ${APPDATA_DIR}/pgvector:/var/lib/postgresql/data
+      - ./config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./config/postgresql.conf:/etc/postgresql/pgvector.conf:ro
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/pgvector.conf
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - traefik
+
+  postgres_exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.17.1
+    container_name: postgres_exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: postgresql://postgres:${POSTGRES_PASSWORD}@pgvector:5432/postgres?sslmode=disable
+    depends_on:
+      pgvector:
+        condition: service_healthy
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:9187/metrics || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - traefik
+
+networks:
+  traefik:
+    external: true

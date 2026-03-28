@@ -1,4 +1,5 @@
 include:
+  - apps/pgvector/docker-compose.yml
   - apps/traefik/docker-compose.yml
   - apps/cloudflared/docker-compose.yml
   - apps/loki/docker-compose.yml
@@ -130,6 +131,10 @@ services:
       bazarr:
         condition: service_healthy
 
+  postgres_exporter:
+    depends_on:
+      pgvector:
+        condition: service_healthy
 
   seerr:
     depends_on:
