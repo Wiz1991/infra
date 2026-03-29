@@ -13,7 +13,7 @@ discovery.relabel "containers" {
 
   rule {
     source_labels = ["__meta_docker_compose_service"]
-    target_label  = "service"
+    target_label  = "service_name"
   }
 
   rule {
@@ -21,11 +21,11 @@ discovery.relabel "containers" {
     target_label  = "project"
   }
 
-  // containers with moe.radar.service label: override service, extract process from container name
+  // containers with moe.radar.service label: override service_name, extract process from container name
   rule {
     source_labels = ["__meta_docker_container_label_moe_radar_service"]
     regex         = "(.+)"
-    target_label  = "service"
+    target_label  = "service_name"
   }
 
   rule {
@@ -44,7 +44,7 @@ loki.source.docker "containers" {
 loki.process "pipeline" {
   // workerd containers: pino JSON with numeric levels
   stage.match {
-    selector = "{service=\"workerd\"}"
+    selector = "{service_name=\"workerd\"}"
 
     stage.json {
       expressions = { level = "level", queue = "queue" }
@@ -62,7 +62,7 @@ loki.process "pipeline" {
 
   // all other containers: regex-based level extraction
   stage.match {
-    selector = "{service!=\"workerd\"}"
+    selector = "{service_name!=\"workerd\"}"
 
     stage.regex {
       expression = "(?i)(?:level|lvl)[=: ]*(?P<level>\\w+)"
