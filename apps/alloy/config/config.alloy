@@ -5,10 +5,25 @@ discovery.docker "containers" {
 discovery.relabel "containers" {
   targets = discovery.docker.containers.targets
 
+  // Default: app = container name
   rule {
     source_labels = ["__meta_docker_container_name"]
     regex         = "/?(.*)"
     target_label  = "app"
+  }
+
+  // workerd-* containers: extract process, override app to "workerd"
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/?workerd-(.*)"
+    target_label  = "process"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/?workerd-.*"
+    target_label  = "app"
+    replacement   = "workerd"
   }
 
   rule {
@@ -24,38 +39,9 @@ loki.source.docker "containers" {
 }
 
 loki.process "pipeline" {
-  // Group workerd-* containers under service_name=workerd with process label
-  stage.match {
-    selector = "{app=\"workerd-scheduler\"}"
-    stage.static_labels {
-      values = { service_name = "workerd", process = "scheduler" }
-    }
-  }
-
-  stage.match {
-    selector = "{app=\"workerd-catalog\"}"
-    stage.static_labels {
-      values = { service_name = "workerd", process = "catalog" }
-    }
-  }
-
-  stage.match {
-    selector = "{app=\"workerd-ingestion\"}"
-    stage.static_labels {
-      values = { service_name = "workerd", process = "ingestion" }
-    }
-  }
-
-  stage.match {
-    selector = "{app=\"workerd-matching\"}"
-    stage.static_labels {
-      values = { service_name = "workerd", process = "matching" }
-    }
-  }
-
   // workerd containers: pino JSON with numeric levels
   stage.match {
-    selector = "{service_name=\"workerd\"}"
+    selector = "{app=\"workerd\"}"
 
     stage.json {
       expressions = { level = "level", queue = "queue" }
@@ -67,21 +53,21 @@ loki.process "pipeline" {
     }
 
     stage.labels {
-      values = { queue = "" }
+      values = { level = "", queue = "" }
     }
   }
 
   // all other containers: regex-based level extraction
   stage.match {
-    selector = "{service_name!=\"workerd\"}"
+    selector = "{app!=\"workerd\"}"
 
     stage.regex {
       expression = "(?i)(?:level|lvl)[=: ]*(?P<level>\\w+)"
     }
-  }
 
-  stage.labels {
-    values = { level = "" }
+    stage.labels {
+      values = { level = "" }
+    }
   }
 
   forward_to = [loki.write.loki.receiver]
