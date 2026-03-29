@@ -1,0 +1,22 @@
+services:
+  mihon-gateway:
+    image: ghcr.io/wiz1991/mihon-gateway:latest
+    container_name: mihon-gateway
+    restart: unless-stopped
+    environment:
+      - GRPC_PORT=50051
+      - JAVA_OPTS=-Xmx512m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0
+    volumes:
+      - ${APPDATA_DIR}/mihon-gateway:/home/mihon/.local/share/mihon_gateway
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/50051' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    networks:
+      - traefik
+
+networks:
+  traefik:
+    external: true

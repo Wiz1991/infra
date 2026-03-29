@@ -1,0 +1,62 @@
+x-workerd: &workerd-base
+  image: r2-registry-production.randomanga.workers.dev/workerd
+  restart: unless-stopped
+  labels: &workerd-labels
+    moe.radar.service: workerd
+  environment: &workerd-env
+    NODE_ENV: production
+    DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pgvector:5432/moe_radar
+    REDIS_URL: redis://redis:6379
+    REDIS_DB: ${MOE_RADAR_REDIS_DB:-1}
+    MIHON_GRPC_URL: mihon-gateway:50051
+    VOYAGE_API_KEY: ${MOE_RADAR_VOYAGE_API_KEY}
+    LOG_LEVEL: ${LOG_LEVEL:-info}
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
+    OTEL_SERVICE_NAME: workerd
+  networks:
+    - traefik
+
+services:
+  workerd-scheduler:
+    <<: *workerd-base
+    container_name: workerd-scheduler
+    environment:
+      <<: *workerd-env
+      WORKERD_CONFIG: /config/workerd.json
+      OTEL_RESOURCE_ATTRIBUTES: process=scheduler
+    volumes:
+      - ./config/scheduler.json:/config/workerd.json:ro
+
+  workerd-catalog:
+    <<: *workerd-base
+    container_name: workerd-catalog
+    environment:
+      <<: *workerd-env
+      WORKERD_CONFIG: /config/workerd.json
+      OTEL_RESOURCE_ATTRIBUTES: process=catalog
+    volumes:
+      - ./config/catalog.json:/config/workerd.json:ro
+
+  workerd-ingestion:
+    <<: *workerd-base
+    container_name: workerd-ingestion
+    environment:
+      <<: *workerd-env
+      WORKERD_CONFIG: /config/workerd.json
+      OTEL_RESOURCE_ATTRIBUTES: process=ingestion
+    volumes:
+      - ./config/ingestion.json:/config/workerd.json:ro
+
+  workerd-matching:
+    <<: *workerd-base
+    container_name: workerd-matching
+    environment:
+      <<: *workerd-env
+      WORKERD_CONFIG: /config/workerd.json
+      OTEL_RESOURCE_ATTRIBUTES: process=matching
+    volumes:
+      - ./config/matching.json:/config/workerd.json:ro
+
+networks:
+  traefik:
+    external: true

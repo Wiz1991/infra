@@ -20,6 +20,19 @@ discovery.relabel "containers" {
     source_labels = ["__meta_docker_compose_project"]
     target_label  = "project"
   }
+
+  // containers with moe.radar.service label: override service, extract process from container name
+  rule {
+    source_labels = ["__meta_docker_container_label_moe_radar_service"]
+    regex         = "(.+)"
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/?workerd-(.*)"
+    target_label  = "process"
+  }
 }
 
 loki.source.docker "containers" {
@@ -29,8 +42,31 @@ loki.source.docker "containers" {
 }
 
 loki.process "pipeline" {
-  stage.regex {
-    expression = "(?i)(?:level|lvl)[=: ]*(?P<level>\\w+)"
+  // workerd containers: pino JSON with numeric levels
+  stage.match {
+    selector = "{service=\"workerd\"}"
+
+    stage.json {
+      expressions = { level = "level", queue = "queue" }
+    }
+
+    stage.template {
+      source   = "level"
+      template = "{{ if eq .Value \"10\" }}trace{{ else if eq .Value \"20\" }}debug{{ else if eq .Value \"30\" }}info{{ else if eq .Value \"40\" }}warn{{ else if eq .Value \"50\" }}error{{ else if eq .Value \"60\" }}fatal{{ else }}{{ .Value }}{{ end }}"
+    }
+
+    stage.labels {
+      values = { queue = "" }
+    }
+  }
+
+  // all other containers: regex-based level extraction
+  stage.match {
+    selector = "{service!=\"workerd\"}"
+
+    stage.regex {
+      expression = "(?i)(?:level|lvl)[=: ]*(?P<level>\\w+)"
+    }
   }
 
   stage.labels {
@@ -43,5 +79,38 @@ loki.process "pipeline" {
 loki.write "loki" {
   endpoint {
     url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces  = [otelcol.exporter.otlp.tempo.input]
+    metrics = [otelcol.exporter.prometheus.default.input]
+  }
+}
+
+otelcol.exporter.prometheus "default" {
+  forward_to = [prometheus.remote_write.default.receiver]
+}
+
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
   }
 }

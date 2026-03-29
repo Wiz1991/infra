@@ -1,0 +1,24 @@
+services:
+  tempo:
+    image: grafana/tempo:2.7.1
+    container_name: tempo
+    command: -config.file=/etc/tempo/tempo.yml
+    volumes:
+      - ./config/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo_data:/var/tempo
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:3200/ready || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - traefik
+    restart: unless-stopped
+
+volumes:
+  tempo_data:
+
+networks:
+  traefik:
+    external: true

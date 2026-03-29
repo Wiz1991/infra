@@ -4,6 +4,7 @@ include:
   - apps/traefik/docker-compose.yml
   - apps/cloudflared/docker-compose.yml
   - apps/loki/docker-compose.yml
+  - apps/tempo/docker-compose.yml
   - apps/alloy/docker-compose.yml
   - apps/grafana/docker-compose.yml
   - apps/bazarr/docker-compose.yml
@@ -23,6 +24,8 @@ include:
   - apps/restic/docker-compose.yml
   - apps/adguard/docker-compose.yml
   - apps/anibridge/docker-compose.yml
+  - apps/mihon-gateway/docker-compose.yml
+  - apps/moe-radar/docker-compose.yml
 
 services:
   loki:
@@ -30,9 +33,16 @@ services:
       traefik:
         condition: service_healthy
 
+  tempo:
+    depends_on:
+      traefik:
+        condition: service_healthy
+
   alloy:
     depends_on:
       loki:
+        condition: service_healthy
+      tempo:
         condition: service_healthy
 
   grafana:
@@ -42,6 +52,8 @@ services:
       loki:
         condition: service_healthy
       prometheus:
+        condition: service_healthy
+      tempo:
         condition: service_healthy
 
   plex:
@@ -150,4 +162,36 @@ services:
   anibridge:
     depends_on:
       traefik:
+        condition: service_healthy
+
+  workerd-scheduler:
+    depends_on:
+      pgvector:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mihon-gateway:
+        condition: service_healthy
+
+  workerd-catalog:
+    depends_on:
+      pgvector:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  workerd-ingestion:
+    depends_on:
+      pgvector:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mihon-gateway:
+        condition: service_healthy
+
+  workerd-matching:
+    depends_on:
+      pgvector:
+        condition: service_healthy
+      redis:
         condition: service_healthy

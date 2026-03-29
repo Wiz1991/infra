@@ -1,0 +1,6 @@
+{
+  "workers": {
+    "catalog.series": {},
+    "catalog.embeddings": {}
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "workers": {
+    "ingestion.crawl": {
+      "concurrency": 1,
+      "lockDuration": 60000
+    },
+    "ingestion.details": {
+      "concurrency": 10,
+      "lockDuration": 60000
+    },
+    "ingestion.chapters": {
+      "concurrency": 5,
+      "lockDuration": 60000
+    },
+    "ingestion.latest": {
+      "concurrency": 1,
+      "lockDuration": 60000
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "workers": {
+    "catalog.pipeline": {},
+    "sources.metadata": {},
+    "sources.install": {},
+    "sources.update": {},
+    "ingestion.dispatch": {},
+    "matching.dispatch": {}
+  },
+  "schedulers": {
+    "catalog-pipeline": {
+      "queue": "catalog.pipeline",
+      "pattern": "0 0 * * *"
+    },
+    "matching-dispatch": {
+      "queue": "matching.dispatch",
+      "pattern": "0 * * * *",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "type": "exponential",
+          "delay": 60000
+        },
+        "removeOnComplete": true,
+        "removeOnFail": {
+          "age": 86400
+        }
+      }
+    },
+    "sources-metadata": {
+      "queue": "sources.metadata",
+      "pattern": "0 * * * *"
+    },
+    "sources-install": {
+      "queue": "sources.install",
+      "pattern": "0 * * * *"
+    },
+    "sources-update": {
+      "queue": "sources.update",
+      "pattern": "0 0 * * *"
+    },
+    "ingestion-dispatch": {
+      "queue": "ingestion.dispatch",
+      "pattern": "0 */6 * * *",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "type": "exponential",
+          "delay": 60000
+        },
+        "removeOnComplete": true,
+        "removeOnFail": {
+          "age": 86400
+        }
+      }
+    },
+    "ingestion-latest": {
+      "queue": "ingestion.latest",
+      "pattern": "*/5 * * * *",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "type": "exponential",
+          "delay": 60000
+        },
+        "removeOnComplete": true,
+        "removeOnFail": {
+          "age": 86400
+        }
+      }
+    }
+  }
+}
