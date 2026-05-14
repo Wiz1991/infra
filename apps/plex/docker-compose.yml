@@ -12,6 +12,17 @@ services:
     volumes:
       - ${APPDATA_DIR}/plex:/config
       - /mnt/media:/mnt:rslave
+      - ./check-mounts.sh:/usr/local/bin/check-mounts:ro
+      # Gates s6 service startup until FUSE mounts are alive. Protects
+      # against Docker auto-restart (which bypasses compose depends_on)
+      # letting Plex scan a dead-mount tree and prune the library.
+      - ./wait-for-mounts.sh:/custom-cont-init.d/01-wait-for-mounts:ro
     devices:
       - /dev/dri:/dev/dri
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/check-mounts"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 120s
     restart: unless-stopped
