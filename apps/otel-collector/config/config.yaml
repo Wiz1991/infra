@@ -497,6 +497,9 @@ receivers:
     tcp:
       listen_address: 0.0.0.0:54527
     protocol: rfc5424
+    # Default LF-delimited framing, matching rsyslog omfwd's default TCP framing.
+    # Safe because rsyslog escapes embedded newlines in the message body (#012),
+    # so a single log can't be split across records.
 
 processors:
   memory_limiter:
@@ -641,6 +644,34 @@ processors:
         value: infra
         action: upsert
 
+  # --- host-log service tagging (per syslog daemon) ---
+  # The syslog receiver parses the rfc5424 APPNAME into the log attribute
+  # "appname" (sshd, dockerd, kernel, systemd, sudo, tailscaled, ...). We want
+  # that as service.name, but service.name is a *resource* attribute and every
+  # record off the receiver shares one resource — so promoting appname directly
+  # would let the last record in a batch win for all of them.
+  #
+  # groupbyattrs re-partitions the batch into one resource per appname value and
+  # lifts appname to resource level; then resource/host_logs renames it.
+  groupbyattrs/host_logs:
+    keys:
+      - appname
+
+  resource/host_logs:
+    attributes:
+      # Baseline for records with no appname (rare); overwritten below if present.
+      - key: service.name
+        value: host
+        action: upsert
+      - key: service.name
+        from_attribute: appname
+        action: upsert
+      - key: service.namespace
+        value: infra
+        action: upsert
+      - key: appname
+        action: delete
+
   batch:
     send_batch_size: 8192
     send_batch_max_size: 10000
@@ -681,16 +712,17 @@ service:
       processors: [memory_limiter, resourcedetection, resource/env, transform/strip_ansi, transform/normalize_severity, transform/namespaces, batch]
       exporters: [otlp/signoz]
 
-    # Host logs get their own pipeline so they can reuse resource/host — the same
-    # processor metrics/host uses. That puts host logs and host metrics under one
-    # service ("host" / namespace "infra") in SigNoz, instead of stranding the
-    # logs under a service nobody thinks to look at. The syslog receiver parses
-    # RFC5424 priority into severity natively, so the container-log severity and
-    # ANSI-stripping transforms don't apply here. host.name comes from
-    # resource/env (= HOST_NAME = homelab, same as tailscale).
+    # Host logs get their own pipeline. service.name is set per syslog daemon
+    # (sshd, dockerd, kernel, systemd, sudo, tailscaled, ...) via
+    # groupbyattrs/host_logs + resource/host_logs, so each daemon is its own
+    # service in SigNoz and scales across hosts — filter host.name to scope to a
+    # machine. namespace stays "infra" (shared with host metrics). host.name
+    # comes from resource/env (= HOST_NAME = homelab, same as tailscale). The
+    # syslog receiver parses RFC5424 priority into severity natively, so the
+    # container-log severity and ANSI-stripping transforms don't apply here.
     logs/host:
       receivers: [syslog/host]
-      processors: [memory_limiter, resourcedetection, resource/env, resource/host, batch]
+      processors: [memory_limiter, resourcedetection, resource/env, groupbyattrs/host_logs, resource/host_logs, batch]
       exporters: [otlp/signoz]
 
     metrics/containers:
