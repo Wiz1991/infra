@@ -355,8 +355,22 @@ receivers:
           system.memory.utilization:
             enabled: true
       paging:
-      processes:
+      # `processes` intentionally disabled. It reads /proc/<pid> of host processes,
+      # tripping a ptrace check that docker-default AppArmor denies (~96 kernel
+      # audit lines/hour). Measured: with it on, 2 denials/75s; off, zero. The
+      # metric is only a process count — not worth the audit spam, and re-enabling
+      # it cleanly would need apparmor=unconfined, which is a worse trade.
+      # To restore: uncomment the line below and accept the denials.
+      # processes:
       network:
+        metrics:
+          # Same reason, and this was the bigger offender: collecting
+          # system.network.connections makes gopsutil walk /proc/<pid>/fd for
+          # every host process to map sockets to owners — ~700 AppArmor ptrace
+          # denials/hour in the kernel log. The remaining network metrics
+          # (io, errors, dropped, packets) read /proc/net/dev and are unaffected.
+          system.network.connections:
+            enabled: false
       disk:
       filesystem:
         metrics:
@@ -506,6 +520,16 @@ processors:
     check_interval: 5s
     limit_mib: 400
     spike_limit_mib: 100
+
+  # Plex logs this benign warning once a second — ~3.6k lines/hour, which was
+  # ~40% of all log volume and 100% of plex's. It carries no signal; drop it at
+  # the collector rather than paying to store it in ClickHouse forever.
+  # Placed first in the pipeline so dropped records skip all downstream work.
+  filter/plex_noise:
+    error_mode: ignore
+    logs:
+      log_record:
+        - 'IsMatch(body, ".*Ignoring unexpected message in NotificationStream.*")'
 
   resourcedetection:
     detectors: [env, system]
@@ -709,7 +733,7 @@ service:
   pipelines:
     logs:
       receivers: [filelog/docker, filelog/plex, filelog/traefik_access]
-      processors: [memory_limiter, resourcedetection, resource/env, transform/strip_ansi, transform/normalize_severity, transform/namespaces, batch]
+      processors: [memory_limiter, filter/plex_noise, resourcedetection, resource/env, transform/strip_ansi, transform/normalize_severity, transform/namespaces, batch]
       exporters: [otlp/signoz]
 
     # Host logs get their own pipeline. service.name is set per syslog daemon
