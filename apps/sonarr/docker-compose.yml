@@ -1,7 +1,15 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
 services:
   sonarr:
     image: lscr.io/linuxserver/sonarr:4.0.16
     container_name: sonarr
+    logging: *logging
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -16,6 +24,9 @@ services:
       - traefik.http.routers.sonarr.tls.certresolver=letsencrypt
       - traefik.http.routers.sonarr.middlewares=security-headers@file
       - traefik.http.services.sonarr.loadbalancer.server.port=8989
+      - service.name=sonarr
+      - otel.logs=stdout
+      - service.namespace=automation
     healthcheck:
       test: curl -f http://localhost:8989/ping || exit 1
       interval: 15s

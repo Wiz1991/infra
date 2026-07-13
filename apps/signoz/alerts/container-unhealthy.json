@@ -1,0 +1,55 @@
+{
+  "alert": "Container is UNHEALTHY (docker healthcheck failing)",
+  "alertType": "METRIC_BASED_ALERT",
+  "ruleType": "threshold_rule",
+  "description": "A container has been failing its own docker healthcheck for 5 minutes. This is the gap httpcheck can't see: 27 containers define a healthcheck and the otel docker_stats receiver reports none of them.",
+  "evalWindow": "5m",
+  "frequency": "1m",
+  "version": "v5",
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "metrics",
+            "stepInterval": "1m",
+            "filter": {
+              "expression": ""
+            },
+            "aggregations": [
+              {
+                "metricName": "docker_container_healthy",
+                "temporality": "unspecified",
+                "timeAggregation": "min",
+                "spaceAggregation": "min"
+              }
+            ],
+            "groupBy": [
+              {
+                "name": "container"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "op": "2",
+    "target": 1.0,
+    "matchType": "2",
+    "selectedQueryName": "A"
+  },
+  "labels": {
+    "severity": "warning"
+  },
+  "annotations": {
+    "summary": "{{$labels.container}} is failing its healthcheck",
+    "description": "Check `docker ps` and the container's logs."
+  },
+  "preferredChannels": [
+    "default"
+  ]
+}

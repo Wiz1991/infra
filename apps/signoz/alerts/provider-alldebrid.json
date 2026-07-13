@@ -1,0 +1,52 @@
+{
+  "alert": "AllDebrid is down",
+  "alertType": "METRIC_BASED_ALERT",
+  "ruleType": "threshold_rule",
+  "description": "AllDebrid's public API has been unreachable for 10 minutes. Probed at the provider directly, so this is the provider being down, not decypharr.",
+  "evalWindow": "10m",
+  "frequency": "5m",
+  "version": "v5",
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "metrics",
+            "stepInterval": "1m",
+            "filter": {
+              "expression": "probe.service = 'alldebrid' AND http.status_class = '2xx'"
+            },
+            "aggregations": [
+              {
+                "metricName": "httpcheck.status",
+                "temporality": "unspecified",
+                "timeAggregation": "min",
+                "spaceAggregation": "min"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "op": "2",
+    "target": 1.0,
+    "matchType": "2",
+    "selectedQueryName": "A"
+  },
+  "labels": {
+    "severity": "warning",
+    "service": "alldebrid",
+    "provider": "alldebrid"
+  },
+  "annotations": {
+    "summary": "AllDebrid is unreachable",
+    "description": "Downloads and repairs against this provider will fail until it recovers."
+  },
+  "preferredChannels": [
+    "default"
+  ]
+}

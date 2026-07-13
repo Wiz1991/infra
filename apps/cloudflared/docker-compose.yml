@@ -1,7 +1,18 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
 services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
+    logging: *logging
+    labels:
+      - service.name=cloudflared
+      - service.namespace=infra
     command: tunnel run
     environment:
       - TUNNEL_TOKEN=${CF_TUNNEL_TOKEN}

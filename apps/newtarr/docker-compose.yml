@@ -1,7 +1,15 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
 services:
   newtarr:
     image: ghcr.io/elfhosted/newtarr:v1.0.0
     container_name: newtarr
+    logging: *logging
     environment:
       - TZ=${TZ}
     volumes:
@@ -13,6 +21,8 @@ services:
       - traefik.http.routers.newtarr.tls.certresolver=letsencrypt
       - traefik.http.routers.newtarr.middlewares=security-headers@file
       - traefik.http.services.newtarr.loadbalancer.server.port=9705
+      - service.name=newtarr
+      - service.namespace=automation
     healthcheck:
       test: python3 -c "import http.client; conn = http.client.HTTPConnection('localhost', 9705); conn.request('GET', '/'); exit(0) if conn.getresponse().status == 200 else exit(1)" || exit 1
       interval: 15s

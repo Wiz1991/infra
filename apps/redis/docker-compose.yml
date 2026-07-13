@@ -1,7 +1,18 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
 services:
   redis:
     image: redis:7.4-alpine
     container_name: redis
+    logging: *logging
+    labels:
+      - service.name=redis
+      - service.namespace=infra
     restart: unless-stopped
     command:
       - redis-server
@@ -16,12 +27,17 @@ services:
       retries: 5
     ports:
       - "6379:6379"
+    mem_limit: 5g
     networks:
       - traefik
 
   redis_exporter:
     image: oliver006/redis_exporter:v1.66.0
     container_name: redis_exporter
+    logging: *logging
+    labels:
+      - service.name=redis_exporter
+      - service.namespace=observability
     restart: unless-stopped
     environment:
       REDIS_ADDR: redis://redis:6379

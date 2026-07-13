@@ -1,0 +1,50 @@
+{
+  "alert": "decypharr repair job has STOPPED RUNNING",
+  "alertType": "LOGS_BASED_ALERT",
+  "ruleType": "threshold_rule",
+  "description": "No '[repair] Starting repair' line for 8 hours, though it's configured to run every 6h. A job that never starts logs no errors, so the failing-alert above cannot catch this \u2014 hence alertOnAbsent (absentFor is in MINUTES).",
+  "evalWindow": "8h",
+  "frequency": "30m",
+  "version": "v5",
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "logs",
+            "stepInterval": "30m",
+            "filter": {
+              "expression": "service.name = 'decypharr' AND component = 'repair' AND body CONTAINS 'Starting repair'"
+            },
+            "aggregations": [
+              {
+                "expression": "count()"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "op": "2",
+    "target": 1.0,
+    "matchType": "1",
+    "selectedQueryName": "A",
+    "alertOnAbsent": true,
+    "absentFor": 480
+  },
+  "labels": {
+    "severity": "warning",
+    "service": "decypharr"
+  },
+  "annotations": {
+    "summary": "decypharr repair has not run in 8h",
+    "description": "Check repair.enabled is still true in decypharr's config.json."
+  },
+  "preferredChannels": [
+    "default"
+  ]
+}

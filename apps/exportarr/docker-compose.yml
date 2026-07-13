@@ -1,7 +1,18 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
 services:
   exportarr_sonarr:
     image: ghcr.io/onedr0p/exportarr:v2.1.0
     container_name: exportarr_sonarr
+    logging: *logging
+    labels:
+      - service.name=exportarr_sonarr
+      - service.namespace=observability
     command: sonarr
     environment:
       - PORT=9707
@@ -16,6 +27,10 @@ services:
   exportarr_radarr:
     image: ghcr.io/onedr0p/exportarr:v2.1.0
     container_name: exportarr_radarr
+    logging: *logging
+    labels:
+      - service.name=exportarr_radarr
+      - service.namespace=observability
     command: radarr
     environment:
       - PORT=9708
@@ -30,6 +45,10 @@ services:
   exportarr_prowlarr:
     image: ghcr.io/onedr0p/exportarr:v2.1.0
     container_name: exportarr_prowlarr
+    logging: *logging
+    labels:
+      - service.name=exportarr_prowlarr
+      - service.namespace=observability
     command: prowlarr
     environment:
       - PORT=9709
@@ -44,6 +63,10 @@ services:
   exportarr_bazarr:
     image: ghcr.io/onedr0p/exportarr:v2.1.0
     container_name: exportarr_bazarr
+    logging: *logging
+    labels:
+      - service.name=exportarr_bazarr
+      - service.namespace=observability
     command: bazarr
     environment:
       - PORT=9710

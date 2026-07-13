@@ -1,0 +1,786 @@
+{
+  "title": "Debrid & decypharr",
+  "name": "Debrid & decypharr",
+  "description": "decypharr, the repair job, and the debrid providers.",
+  "tags": [
+    "debrid",
+    "decypharr"
+  ],
+  "layout": [
+    {
+      "i": "f16e5f8c072e002cda55fdf5",
+      "x": 0,
+      "y": 0,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "936bd3b4f60e3fa4199f003b",
+      "x": 6,
+      "y": 0,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "0d4569abcb48df8a7ad2fa82",
+      "x": 0,
+      "y": 3,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "0a5ed9ede9c37ed12e9941c0",
+      "x": 6,
+      "y": 3,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "1bbacb1bab4dbac2de118d87",
+      "x": 0,
+      "y": 6,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "d0e96592a1788cd2065b9340",
+      "x": 6,
+      "y": 6,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "a0a152d85eb8991bd6397cff",
+      "x": 0,
+      "y": 9,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "4241e1152cb7cacb80181860",
+      "x": 6,
+      "y": 9,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "45a4dc12aa388f33a06db214",
+      "x": 0,
+      "y": 12,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "16fa5cc3af03e511171501c8",
+      "x": 6,
+      "y": 12,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    }
+  ],
+  "widgets": [
+    {
+      "id": "f16e5f8c072e002cda55fdf5",
+      "title": "Debrid providers up",
+      "description": "Probed at the provider's own API, so an outage here is the provider, not decypharr.",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "httpcheck.status",
+                  "temporality": "unspecified",
+                  "timeAggregation": "min",
+                  "spaceAggregation": "min",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "probe.kind = 'provider' AND http.status_class = '2xx'"
+              },
+              "groupBy": [
+                {
+                  "key": "probe.service",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "probe.service--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{probe.service}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "834c6bd1b618682f1abf7219"
+      }
+    },
+    {
+      "id": "936bd3b4f60e3fa4199f003b",
+      "title": "decypharr up",
+      "description": "",
+      "panelTypes": "value",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "httpcheck.status",
+                  "temporality": "unspecified",
+                  "timeAggregation": "min",
+                  "spaceAggregation": "min",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "probe.service = 'decypharr' AND http.status_class = '2xx'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "decypharr",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "56b33e03fe4de3d5da03f6df"
+      }
+    },
+    {
+      "id": "0d4569abcb48df8a7ad2fa82",
+      "title": "REPAIR JOB \u2014 errors",
+      "description": "Non-zero means repair is failing and broken symlinks are not being fixed.",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "dataSource": "logs",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "service.name = 'decypharr' AND component = 'repair' AND severity_text = 'ERROR'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "repair errors",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "6d3390391c4a9b6dcf242018"
+      }
+    },
+    {
+      "id": "0a5ed9ede9c37ed12e9941c0",
+      "title": "REPAIR JOB \u2014 runs started",
+      "description": "Repair is configured to run every 6h. A flat zero line means it stopped firing.",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "dataSource": "logs",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "service.name = 'decypharr' AND component = 'repair' AND body CONTAINS 'Starting repair'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "runs",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "b4180dd221bf151dc42918d2"
+      }
+    },
+    {
+      "id": "1bbacb1bab4dbac2de118d87",
+      "title": "decypharr log volume by component",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "dataSource": "logs",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "service.name = 'decypharr'"
+              },
+              "groupBy": [
+                {
+                  "key": "component",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "component--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{component}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "086427dc38c84bd156fb0511"
+      }
+    },
+    {
+      "id": "d0e96592a1788cd2065b9340",
+      "title": "decypharr errors by component",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "dataSource": "logs",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "service.name = 'decypharr' AND severity_text = 'ERROR'"
+              },
+              "groupBy": [
+                {
+                  "key": "component",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "component--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{component}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "592989d1ab446d10f0dd926f"
+      }
+    },
+    {
+      "id": "a0a152d85eb8991bd6397cff",
+      "title": "Activity by debrid provider",
+      "description": "Parsed from decypharr's inline Debrid= tag.",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "dataSource": "logs",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "service.name = 'decypharr' AND debrid EXISTS"
+              },
+              "groupBy": [
+                {
+                  "key": "debrid",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "debrid--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{debrid}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "78184735191f1898b91b7315"
+      }
+    },
+    {
+      "id": "4241e1152cb7cacb80181860",
+      "title": "Activity by *arr",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "dataSource": "logs",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "service.name = 'decypharr' AND arr EXISTS"
+              },
+              "groupBy": [
+                {
+                  "key": "arr",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "arr--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{arr}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "d045da0bd5930dbf17673fde"
+      }
+    },
+    {
+      "id": "45a4dc12aa388f33a06db214",
+      "title": "decypharr CPU",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "percentunit",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "container.cpu.utilization",
+                  "temporality": "unspecified",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "service.name = 'decypharr'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "decypharr",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "6703806e371df25dd4fd7c79"
+      }
+    },
+    {
+      "id": "16fa5cc3af03e511171501c8",
+      "title": "decypharr memory",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "bytes",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "container.memory.usage.total",
+                  "temporality": "unspecified",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "service.name = 'decypharr'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "decypharr",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "9ef234fc5b1d6bd50cce5b62"
+      }
+    }
+  ],
+  "variables": {},
+  "version": "v4"
+}

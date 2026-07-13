@@ -1,7 +1,15 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
 services:
   tautulli:
     image: lscr.io/linuxserver/tautulli:2.16.1
     container_name: tautulli
+    logging: *logging
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -15,6 +23,8 @@ services:
       - traefik.http.routers.tautulli.tls.certresolver=letsencrypt
       - traefik.http.routers.tautulli.middlewares=security-headers@file
       - traefik.http.services.tautulli.loadbalancer.server.port=8181
+      - service.name=tautulli
+      - service.namespace=media
     healthcheck:
       test: curl -f http://localhost:8181/status || exit 1
       interval: 15s

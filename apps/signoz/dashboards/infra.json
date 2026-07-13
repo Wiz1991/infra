@@ -1,0 +1,814 @@
+{
+  "title": "Containers & Host",
+  "name": "Containers & Host",
+  "description": "Per-container and host resources, uptime, errors.",
+  "tags": [
+    "infra"
+  ],
+  "layout": [
+    {
+      "i": "3a9653e7c5c3495e654b0dc1",
+      "x": 0,
+      "y": 0,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "6f8ef1d77e3d29f0bf5269e8",
+      "x": 6,
+      "y": 0,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "244f0d364991ad6c9c7f52fc",
+      "x": 0,
+      "y": 3,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "84a9d7cf49d0e6ee904a8cd6",
+      "x": 6,
+      "y": 3,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "b0a4b1a64030c6748bafbeea",
+      "x": 0,
+      "y": 6,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "274b4f4b27f8473099c147e3",
+      "x": 6,
+      "y": 6,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "16838b1c2b7316dc062c3615",
+      "x": 0,
+      "y": 9,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "fc72cd732a6c3a87bd247eae",
+      "x": 6,
+      "y": 9,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "1f255990b91ea875ac549fbb",
+      "x": 0,
+      "y": 12,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "775f788e7cdd7d957306e783",
+      "x": 6,
+      "y": 12,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    }
+  ],
+  "widgets": [
+    {
+      "id": "3a9653e7c5c3495e654b0dc1",
+      "title": "Host CPU (cores busy)",
+      "description": "This collector emits no system.cpu.utilization, so CPU is rate(system.cpu.time) over non-idle states. 6 cores on this box.",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "system.cpu.time",
+                  "temporality": "cumulative",
+                  "timeAggregation": "rate",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "state != 'idle'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "cores busy",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "faccc9037d3c9590d2691403"
+      }
+    },
+    {
+      "id": "6f8ef1d77e3d29f0bf5269e8",
+      "title": "Host memory",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "percentunit",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "system.memory.utilization",
+                  "temporality": "unspecified",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "state = 'used'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "used",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "f8a7d3e5af05f35571a1669a"
+      }
+    },
+    {
+      "id": "244f0d364991ad6c9c7f52fc",
+      "title": "Root disk usage",
+      "description": "ClickHouse degrades badly on a full disk \u2014 this box runs close to the edge.",
+      "panelTypes": "graph",
+      "yAxisUnit": "percentunit",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "system.filesystem.utilization",
+                  "temporality": "unspecified",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "mountpoint = '/'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "/",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "fed2934977a1564789c240aa"
+      }
+    },
+    {
+      "id": "84a9d7cf49d0e6ee904a8cd6",
+      "title": "Load average",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "system.cpu.load_average.5m",
+                  "temporality": "unspecified",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "5m",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "00a731ae47828def93b6b31d"
+      }
+    },
+    {
+      "id": "b0a4b1a64030c6748bafbeea",
+      "title": "CPU by service",
+      "description": "Fraction of TOTAL host CPU (0-1), not percent of one core.",
+      "panelTypes": "graph",
+      "yAxisUnit": "percentunit",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "container.cpu.utilization",
+                  "temporality": "unspecified",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "key": "service.name",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "service.name--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{service.name}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "7296518021051c625e62a97a"
+      }
+    },
+    {
+      "id": "274b4f4b27f8473099c147e3",
+      "title": "Memory by service",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "bytes",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "container.memory.usage.total",
+                  "temporality": "unspecified",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "key": "service.name",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "service.name--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{service.name}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "729ad1a37946d3e0d0ce133f"
+      }
+    },
+    {
+      "id": "16838b1c2b7316dc062c3615",
+      "title": "Container restarts",
+      "description": "A climbing line is a crash-loop.",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "container.restarts",
+                  "temporality": "cumulative",
+                  "timeAggregation": "increase",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "key": "service.name",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "service.name--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{service.name}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "3ade38b164abb6f8556f6367"
+      }
+    },
+    {
+      "id": "fc72cd732a6c3a87bd247eae",
+      "title": "Everything up?",
+      "description": "1 = up. Every probed service, including the debrid providers.",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "httpcheck.status",
+                  "temporality": "unspecified",
+                  "timeAggregation": "min",
+                  "spaceAggregation": "min",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "http.status_class = '2xx'"
+              },
+              "groupBy": [
+                {
+                  "key": "probe.service",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "probe.service--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{probe.service}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "9e9fc7258c2b0c3e2099fb77"
+      }
+    },
+    {
+      "id": "1f255990b91ea875ac549fbb",
+      "title": "Network by service",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "binBps",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "container.network.io.usage.rx_bytes",
+                  "temporality": "cumulative",
+                  "timeAggregation": "rate",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "key": "service.name",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "service.name--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{service.name}} rx",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "556e4d1790359ae96ccc4435"
+      }
+    },
+    {
+      "id": "775f788e7cdd7d957306e783",
+      "title": "Errors across all logging services",
+      "description": "Log collection is opt-in (otel.logs=stdout), so this covers sonarr, radarr and decypharr, plus plex from its own log file.",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "dataSource": "logs",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "severity_text = 'ERROR'"
+              },
+              "groupBy": [
+                {
+                  "key": "service.name",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "service.name--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{service.name}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "993e4deb16a3332ff58f4e05"
+      }
+    }
+  ],
+  "variables": {},
+  "version": "v4"
+}

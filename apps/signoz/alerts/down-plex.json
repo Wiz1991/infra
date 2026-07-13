@@ -1,0 +1,51 @@
+{
+  "alert": "Plex is down",
+  "alertType": "METRIC_BASED_ALERT",
+  "ruleType": "threshold_rule",
+  "description": "Plex has failed its HTTP health check for 5 minutes straight. Plex is gated on decypharr's FUSE mounts (apps/plex/wait-for-mounts.sh), so check the mounts first \u2014 a dead debrid mount takes Plex down with it.",
+  "evalWindow": "5m",
+  "frequency": "1m",
+  "version": "v5",
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "metrics",
+            "stepInterval": "1m",
+            "filter": {
+              "expression": "probe.service = 'plex' AND http.status_class = '2xx'"
+            },
+            "aggregations": [
+              {
+                "metricName": "httpcheck.status",
+                "temporality": "unspecified",
+                "timeAggregation": "min",
+                "spaceAggregation": "min"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "op": "2",
+    "target": 1.0,
+    "matchType": "2",
+    "selectedQueryName": "A"
+  },
+  "labels": {
+    "severity": "critical",
+    "service": "plex"
+  },
+  "annotations": {
+    "summary": "Plex is not responding",
+    "description": "Plex is gated on decypharr's FUSE mounts (apps/plex/wait-for-mounts.sh), so check the mounts first \u2014 a dead debrid mount takes Plex down with it."
+  },
+  "preferredChannels": [
+    "default"
+  ]
+}

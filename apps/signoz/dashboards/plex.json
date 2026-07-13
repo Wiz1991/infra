@@ -1,0 +1,1310 @@
+{
+  "title": "Plex",
+  "name": "Plex",
+  "description": "Plex, its streams, libraries and errors.",
+  "tags": [
+    "plex",
+    "media"
+  ],
+  "layout": [
+    {
+      "i": "17d08e26e4c57f93bae503ca",
+      "x": 0,
+      "y": 0,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "7a3e44f18b5de3092a0015be",
+      "x": 6,
+      "y": 0,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "51d800599452ad4426f93cf9",
+      "x": 0,
+      "y": 3,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "9196cbf0cae5f7db9504beea",
+      "x": 6,
+      "y": 3,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "9e1ebbdbedbb43a51bbb6013",
+      "x": 0,
+      "y": 6,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "a5f319252ba927b00198d28a",
+      "x": 6,
+      "y": 6,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "10c7308d3386a4d044c13192",
+      "x": 0,
+      "y": 9,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "e1afa1c9f407c3db439c0c41",
+      "x": 6,
+      "y": 9,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "b2a7355ce6794f0ded732c91",
+      "x": 0,
+      "y": 12,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "c3a6d66459d4b1807db5455e",
+      "x": 6,
+      "y": 12,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "af91bf506bafa5d9c914f387",
+      "x": 0,
+      "y": 15,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "53cb3d7ed60a406ba5b65bcd",
+      "x": 6,
+      "y": 15,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "9eca42acdcd13ed758127c42",
+      "x": 0,
+      "y": 18,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "8bf55cf675c19249d47ab14a",
+      "x": 6,
+      "y": 18,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "8aa21b18c06cd293653a4a41",
+      "x": 0,
+      "y": 21,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "4e799b7b63f9d69818c9327f",
+      "x": 6,
+      "y": 21,
+      "w": 6,
+      "h": 3,
+      "moved": false,
+      "static": false
+    }
+  ],
+  "widgets": [
+    {
+      "id": "17d08e26e4c57f93bae503ca",
+      "title": "Plex up",
+      "description": "1 = answering /identity. Filtered to the 2xx class: httpcheck emits a series per status class.",
+      "panelTypes": "value",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "httpcheck.status",
+                  "temporality": "unspecified",
+                  "timeAggregation": "min",
+                  "spaceAggregation": "min",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "probe.service = 'plex' AND http.status_class = '2xx'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "plex",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "097bd58dbb73d1a506a56f9b"
+      }
+    },
+    {
+      "id": "7a3e44f18b5de3092a0015be",
+      "title": "Active streams",
+      "description": "From Tautulli.",
+      "panelTypes": "value",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "tautulli_streams",
+                  "temporality": "unspecified",
+                  "timeAggregation": "latest",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "streams",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "ad16e5dfa472417b90827580"
+      }
+    },
+    {
+      "id": "51d800599452ad4426f93cf9",
+      "title": "Streams by transcode decision",
+      "description": "Transcoding is what actually loads the box \u2014 direct play is nearly free.",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "tautulli_streams_by_decision",
+                  "temporality": "unspecified",
+                  "timeAggregation": "latest",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "key": "decision",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "decision--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{decision}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "72a0299b399ce4cb76eee35d"
+      }
+    },
+    {
+      "id": "9196cbf0cae5f7db9504beea",
+      "title": "Streams by user",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "tautulli_streams_by_user",
+                  "temporality": "unspecified",
+                  "timeAggregation": "latest",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "key": "user",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "user--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{user}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "7b32d2fcce408a67e02f520d"
+      }
+    },
+    {
+      "id": "9e1ebbdbedbb43a51bbb6013",
+      "title": "Playback bandwidth",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "bps",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "tautulli_bandwidth_bits_per_second",
+                  "temporality": "unspecified",
+                  "timeAggregation": "latest",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "key": "scope",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "scope--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{scope}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "35d134e4f088490f33414951"
+      }
+    },
+    {
+      "id": "a5f319252ba927b00198d28a",
+      "title": "Plex CPU (host, as Plex sees it)",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "percent",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "plex_host_cpu_util",
+                  "temporality": "unspecified",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "cpu %",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "d37fb32a4aa6ec69462efb67"
+      }
+    },
+    {
+      "id": "10c7308d3386a4d044c13192",
+      "title": "Library size on disk",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "bytes",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "plex_library_storage_total",
+                  "temporality": "unspecified",
+                  "timeAggregation": "latest",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "key": "library",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "library--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{library}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "984eb672266ca9c24828b8d1"
+      }
+    },
+    {
+      "id": "e1afa1c9f407c3db439c0c41",
+      "title": "Items per library",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "tautulli_library_items",
+                  "temporality": "unspecified",
+                  "timeAggregation": "latest",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "key": "library",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "library--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{library}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "df70e1bfa63304ffd123df7a"
+      }
+    },
+    {
+      "id": "b2a7355ce6794f0ded732c91",
+      "title": "Plex errors & warnings",
+      "description": "Plex's own log file. DEBUG is dropped at the collector.",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "dataSource": "logs",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "service.name = 'plex' AND severity_text IN ('ERROR','WARN')"
+              },
+              "groupBy": [
+                {
+                  "key": "severity_text",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "severity_text--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{severity_text}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "b88e800a0297f78b49f52561"
+      }
+    },
+    {
+      "id": "c3a6d66459d4b1807db5455e",
+      "title": "Plex memory",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "bytes",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "container.memory.usage.total",
+                  "temporality": "unspecified",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": "service.name = 'plex'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "plex",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "5ffe2b7c15d59011e4ee94df"
+      }
+    },
+    {
+      "id": "af91bf506bafa5d9c914f387",
+      "title": "Plays per day",
+      "description": "Backfilled from Tautulli. Limited to the metrics retention window.",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "tautulli_plays_daily",
+                  "temporality": "unspecified",
+                  "timeAggregation": "sum",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "key": "media_type",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "media_type--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{media_type}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "597d43a2a4740d47f41af36f"
+      }
+    },
+    {
+      "id": "53cb3d7ed60a406ba5b65bcd",
+      "title": "Watch time per day",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "s",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "tautulli_watch_seconds_daily",
+                  "temporality": "unspecified",
+                  "timeAggregation": "sum",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "watch time",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "54449bdc407db0c2ca84d7ce"
+      }
+    },
+    {
+      "id": "9eca42acdcd13ed758127c42",
+      "title": "Plays \u2014 24h / 7d / 30d / all time",
+      "description": "Rolling windows over Tautulli's whole history \u2014 unaffected by retention.",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "tautulli_history_plays",
+                  "temporality": "unspecified",
+                  "timeAggregation": "latest",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "key": "window",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "window--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{window}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "a1753ad47e394918083a72d8"
+      }
+    },
+    {
+      "id": "8bf55cf675c19249d47ab14a",
+      "title": "Watch time by user (all time)",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "s",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "tautulli_history_watch_seconds_by_user",
+                  "temporality": "unspecified",
+                  "timeAggregation": "latest",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "key": "user",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "user--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{user}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "233ef6ac8b270b9f077b679a"
+      }
+    },
+    {
+      "id": "8aa21b18c06cd293653a4a41",
+      "title": "Plays by user (all time)",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "tautulli_history_plays_by_user",
+                  "temporality": "unspecified",
+                  "timeAggregation": "latest",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "key": "user",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "user--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{user}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "f3a1d2b8387c01ce66788ec3"
+      }
+    },
+    {
+      "id": "4e799b7b63f9d69818c9327f",
+      "title": "Direct play vs transcode (all time)",
+      "description": "Transcoding is what actually costs CPU.",
+      "panelTypes": "graph",
+      "yAxisUnit": "",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "tautulli_history_plays_by_decision",
+                  "temporality": "unspecified",
+                  "timeAggregation": "latest",
+                  "spaceAggregation": "max",
+                  "reduceTo": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "key": "decision",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "decision--string--tag--false"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{decision}}",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "legend": "",
+            "disabled": false,
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "id": "1ac2476d503aff1e9c8712af"
+      }
+    }
+  ],
+  "variables": {},
+  "version": "v4"
+}

@@ -1,7 +1,15 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
 services:
   adguard:
     image: adguard/adguardhome:v0.107.55
     container_name: adguard
+    logging: *logging
     environment:
       - TZ=${TZ}
     ports:
@@ -18,6 +26,8 @@ services:
       - traefik.http.routers.adguard.service=adguard
       - traefik.http.routers.adguard.middlewares=security-headers@file
       - traefik.http.services.adguard.loadbalancer.server.port=3000
+      - service.name=adguard
+      - service.namespace=infra
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3000"]
       interval: 10s

@@ -1,7 +1,19 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
 services:
   byparr:
     image: ghcr.io/thephaseless/byparr:latest
     container_name: byparr
+    logging: *logging
+    labels:
+      - service.name=byparr
+      - service.namespace=debrid
+    init: true
     environment:
       - LOG_LEVEL=debug
       - TZ=${TZ}

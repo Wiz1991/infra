@@ -2,9 +2,18 @@ x-workerd: &workerd-base
   image: r2-registry-production.randomanga.workers.dev/workerd
   restart: unless-stopped
   stop_grace_period: 65s
-  labels: &workerd-labels
-    moe.radar.service: workerd
-    com.centurylinklabs.watchtower.enable: "true"
+  # These four are the only services that instrument themselves: traces and
+  # metrics go straight to SigNoz over OTLP. Their logs do not — workerd writes
+  # pino JSON to stdout, which the collector picks up off the docker log and
+  # parses (see the workerd branch in apps/otel-collector/config/config.yaml).
+  # service.name is set per-process below rather than here, so each worker is its
+  # own service in SigNoz instead of four things called "workerd".
+  logging: &workerd-logging
+    driver: json-file
+    options:
+      labels: service.name,service.namespace,otel.logs
+      max-size: "10m"
+      max-file: "3"
   environment: &workerd-env
     NODE_ENV: production
     DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pgvector:5432/moe_radar
@@ -13,8 +22,7 @@ x-workerd: &workerd-base
     MIHON_GRPC_URL: mihon-gateway:50051
     VOYAGE_API_KEY: ${MOE_RADAR_VOYAGE_API_KEY}
     LOG_LEVEL: ${LOG_LEVEL:-info}
-    OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
-    OTEL_SERVICE_NAME: workerd
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://signoz-ingester:4318
   networks:
     - traefik
 
@@ -22,40 +30,58 @@ services:
   workerd-scheduler:
     <<: *workerd-base
     container_name: workerd-scheduler
+    labels: &workerd-labels
+      moe.radar.service: workerd
+      com.centurylinklabs.watchtower.enable: "true"
+      service.name: workerd-scheduler
+      service.namespace: moe-radar
     environment:
       <<: *workerd-env
       WORKERD_CONFIG: /config/workerd.json
-      OTEL_RESOURCE_ATTRIBUTES: process=scheduler
+      OTEL_SERVICE_NAME: workerd-scheduler
+      OTEL_RESOURCE_ATTRIBUTES: process=scheduler,service.namespace=moe-radar
     volumes:
       - ./config/scheduler.json:/config/workerd.json:ro
 
   workerd-catalog:
     <<: *workerd-base
     container_name: workerd-catalog
+    labels:
+      <<: *workerd-labels
+      service.name: workerd-catalog
     environment:
       <<: *workerd-env
       WORKERD_CONFIG: /config/workerd.json
-      OTEL_RESOURCE_ATTRIBUTES: process=catalog
+      OTEL_SERVICE_NAME: workerd-catalog
+      OTEL_RESOURCE_ATTRIBUTES: process=catalog,service.namespace=moe-radar
     volumes:
       - ./config/catalog.json:/config/workerd.json:ro
 
   workerd-ingestion:
     <<: *workerd-base
     container_name: workerd-ingestion
+    labels:
+      <<: *workerd-labels
+      service.name: workerd-ingestion
     environment:
       <<: *workerd-env
       WORKERD_CONFIG: /config/workerd.json
-      OTEL_RESOURCE_ATTRIBUTES: process=ingestion
+      OTEL_SERVICE_NAME: workerd-ingestion
+      OTEL_RESOURCE_ATTRIBUTES: process=ingestion,service.namespace=moe-radar
     volumes:
       - ./config/ingestion.json:/config/workerd.json:ro
 
   workerd-matching:
     <<: *workerd-base
     container_name: workerd-matching
+    labels:
+      <<: *workerd-labels
+      service.name: workerd-matching
     environment:
       <<: *workerd-env
       WORKERD_CONFIG: /config/workerd.json
-      OTEL_RESOURCE_ATTRIBUTES: process=matching
+      OTEL_SERVICE_NAME: workerd-matching
+      OTEL_RESOURCE_ATTRIBUTES: process=matching,service.namespace=moe-radar
     volumes:
       - ./config/matching.json:/config/workerd.json:ro
 

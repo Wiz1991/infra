@@ -1,13 +1,25 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
 services:
   profilarr_anime:
-    image: santiagosayshey/profilarr:v1.1.4
+    image: ghcr.io/dictionarry-hub/profilarr:2.0.7
     container_name: profilarr_anime
+    logging: *logging
     volumes:
       - ${APPDATA_DIR}/profilarr_anime:/config
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
+      - AUTH=off
+      - ORIGIN=https://anime.profilarr.${DOMAIN_NAME}
+      - PROTOCOL_HEADER=x-forwarded-proto
+      - HOST_HEADER=x-forwarded-host
     labels:
       - traefik.enable=true
       - traefik.http.routers.profilarr_anime.rule=Host(`anime.profilarr.${DOMAIN_NAME}`)
@@ -15,8 +27,10 @@ services:
       - traefik.http.routers.profilarr_anime.tls.certresolver=letsencrypt
       - traefik.http.routers.profilarr_anime.middlewares=security-headers@file
       - traefik.http.services.profilarr_anime.loadbalancer.server.port=6868
+      - service.name=profilarr_anime
+      - service.namespace=automation
     healthcheck:
-      test: wget --no-verbose --tries=1 --spider http://localhost:6868/ || exit 1
+      test: curl -fsS -o /dev/null http://localhost:6868/ || exit 1
       interval: 15s
       timeout: 5s
       retries: 5
@@ -26,14 +40,19 @@ services:
     restart: unless-stopped
 
   profilarr:
-    image: santiagosayshey/profilarr:v1.1.4
+    image: ghcr.io/dictionarry-hub/profilarr:2.0.7
     container_name: profilarr
+    logging: *logging
     volumes:
       - ${APPDATA_DIR}/profilarr:/config
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
+      - AUTH=off
+      - ORIGIN=https://profilarr.${DOMAIN_NAME}
+      - PROTOCOL_HEADER=x-forwarded-proto
+      - HOST_HEADER=x-forwarded-host
     labels:
       - traefik.enable=true
       - traefik.http.routers.profilarr.rule=Host(`profilarr.${DOMAIN_NAME}`)
@@ -41,8 +60,10 @@ services:
       - traefik.http.routers.profilarr.tls.certresolver=letsencrypt
       - traefik.http.routers.profilarr.middlewares=security-headers@file
       - traefik.http.services.profilarr.loadbalancer.server.port=6868
+      - service.name=profilarr
+      - service.namespace=automation
     healthcheck:
-      test: wget --no-verbose --tries=1 --spider http://localhost:6868/ || exit 1
+      test: curl -fsS -o /dev/null http://localhost:6868/ || exit 1
       interval: 15s
       timeout: 5s
       retries: 5

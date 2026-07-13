@@ -1,7 +1,18 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
 services:
   pgvector:
     image: pgvector/pgvector:pg17-bookworm
     container_name: pgvector
+    logging: *logging
+    labels:
+      - service.name=pgvector
+      - service.namespace=infra
     restart: unless-stopped
     shm_size: 4g
     environment:
@@ -27,6 +38,10 @@ services:
   postgres_exporter:
     image: quay.io/prometheuscommunity/postgres-exporter:v0.17.1
     container_name: postgres_exporter
+    logging: *logging
+    labels:
+      - service.name=postgres_exporter
+      - service.namespace=observability
     restart: unless-stopped
     environment:
       DATA_SOURCE_URI: pgvector:5432/postgres?sslmode=disable

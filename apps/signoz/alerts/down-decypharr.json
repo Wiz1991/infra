@@ -1,0 +1,51 @@
+{
+  "alert": "decypharr is down",
+  "alertType": "METRIC_BASED_ALERT",
+  "ruleType": "threshold_rule",
+  "description": "decypharr has failed its HTTP health check for 5 minutes straight. Downloads and symlinking stop. Plex will follow if the mounts go stale.",
+  "evalWindow": "5m",
+  "frequency": "1m",
+  "version": "v5",
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "metrics",
+            "stepInterval": "1m",
+            "filter": {
+              "expression": "probe.service = 'decypharr' AND http.status_class = '2xx'"
+            },
+            "aggregations": [
+              {
+                "metricName": "httpcheck.status",
+                "temporality": "unspecified",
+                "timeAggregation": "min",
+                "spaceAggregation": "min"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "op": "2",
+    "target": 1.0,
+    "matchType": "2",
+    "selectedQueryName": "A"
+  },
+  "labels": {
+    "severity": "critical",
+    "service": "decypharr"
+  },
+  "annotations": {
+    "summary": "decypharr is not responding",
+    "description": "Downloads and symlinking stop. Plex will follow if the mounts go stale."
+  },
+  "preferredChannels": [
+    "default"
+  ]
+}

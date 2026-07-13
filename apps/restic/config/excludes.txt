@@ -1,3 +1,9 @@
+# Postgres / pgvector (moe_radar DB) — excluded. It's the moe-radar project
+# being migrated off this host, not part of the media stack. A live copy of a
+# running Postgres data dir isn't cleanly restorable anyway; if this ever needs
+# backing up, do it via pg_dump into a separate path, not a raw file copy.
+/data/pgvector
+
 # *arr apps (radarr, sonarr, sonarr_anime, prowlarr)
 **/logs/**
 **/UpdateLogs/**

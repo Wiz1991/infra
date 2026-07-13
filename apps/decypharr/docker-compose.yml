@@ -1,7 +1,16 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
 services:
   decypharr:
     image: ghcr.io/sirrobot01/decypharr:v1.1.6
     container_name: decypharr
+    logging: *logging
+    init: true
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -24,6 +33,9 @@ services:
       - traefik.http.routers.decypharr.tls.certresolver=letsencrypt
       - traefik.http.routers.decypharr.middlewares=security-headers@file
       - traefik.http.services.decypharr.loadbalancer.server.port=8282
+      - service.name=decypharr
+      - otel.logs=stdout
+      - service.namespace=debrid
     healthcheck:
       test: ["CMD", "/usr/local/bin/healthcheck-full"]
       interval: 30s

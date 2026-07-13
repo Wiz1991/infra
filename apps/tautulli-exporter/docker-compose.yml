@@ -1,0 +1,42 @@
+# Turns Tautulli's activity API into Prometheus metrics: active streams, who is
+# watching, transcode-vs-direct-play, and bandwidth. Scraped by the
+# otel-collector as job `tautulli`.
+#
+# Tautulli exposes no /metrics of its own and there is no maintained exporter
+# image, so this runs a small stdlib-only script on a stock python image — see
+# config/exporter.py. Nothing to build, nothing to keep patched.
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  tautulli_exporter:
+    image: python:3.12-alpine
+    container_name: tautulli_exporter
+    logging: *logging
+    labels:
+      - service.name=tautulli_exporter
+      - service.namespace=observability
+    command: ["python", "-u", "/app/exporter.py"]
+    environment:
+      - TAUTULLI_URL=http://tautulli:8181
+      - TAUTULLI_API_KEY=${TAUTULLI_API_KEY}
+      - POLL_INTERVAL=30
+    volumes:
+      - ./config/exporter.py:/app/exporter.py:ro
+    healthcheck:
+      disable: true
+    depends_on:
+      tautulli:
+        condition: service_healthy
+    mem_limit: 128m
+    networks:
+      - traefik
+    restart: unless-stopped
+
+networks:
+  traefik:
+    external: true

@@ -1,0 +1,51 @@
+{
+  "alert": "Tautulli is down",
+  "alertType": "METRIC_BASED_ALERT",
+  "ruleType": "threshold_rule",
+  "description": "Tautulli has failed its HTTP health check for 5 minutes straight. Playback stats stop \u2014 Plex itself is unaffected.",
+  "evalWindow": "5m",
+  "frequency": "1m",
+  "version": "v5",
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "metrics",
+            "stepInterval": "1m",
+            "filter": {
+              "expression": "probe.service = 'tautulli' AND http.status_class = '2xx'"
+            },
+            "aggregations": [
+              {
+                "metricName": "httpcheck.status",
+                "temporality": "unspecified",
+                "timeAggregation": "min",
+                "spaceAggregation": "min"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "op": "2",
+    "target": 1.0,
+    "matchType": "2",
+    "selectedQueryName": "A"
+  },
+  "labels": {
+    "severity": "warning",
+    "service": "tautulli"
+  },
+  "annotations": {
+    "summary": "Tautulli is not responding",
+    "description": "Playback stats stop \u2014 Plex itself is unaffected."
+  },
+  "preferredChannels": [
+    "default"
+  ]
+}

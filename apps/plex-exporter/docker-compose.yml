@@ -1,0 +1,35 @@
+# Plex metrics straight from the Plex API: per-library size and duration, and
+# playback bandwidth. Scraped by the otel-collector as job `plex`.
+#
+# Plex runs with host networking, so this reaches it via the host gateway rather
+# than a container name.
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  plex_exporter:
+    image: ghcr.io/jsclayton/prometheus-plex-exporter:latest
+    container_name: plex_exporter
+    logging: *logging
+    labels:
+      - service.name=plex_exporter
+      - service.namespace=observability
+    environment:
+      - PLEX_SERVER=http://host.docker.internal:32400
+      - PLEX_TOKEN=${PLEX_TOKEN}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    healthcheck:
+      disable: true
+    mem_limit: 128m
+    networks:
+      - traefik
+    restart: unless-stopped
+
+networks:
+  traefik:
+    external: true

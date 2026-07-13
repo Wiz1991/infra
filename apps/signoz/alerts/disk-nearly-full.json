@@ -1,0 +1,51 @@
+{
+  "alert": "Host disk is nearly full",
+  "alertType": "METRIC_BASED_ALERT",
+  "ruleType": "threshold_rule",
+  "description": "Root filesystem over 90%. This box runs close to the edge and ClickHouse degrades badly on a full disk.",
+  "evalWindow": "10m",
+  "frequency": "10m",
+  "version": "v5",
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "metrics",
+            "stepInterval": "5m",
+            "filter": {
+              "expression": "mountpoint = '/'"
+            },
+            "aggregations": [
+              {
+                "metricName": "system.filesystem.utilization",
+                "temporality": "unspecified",
+                "timeAggregation": "avg",
+                "spaceAggregation": "max"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "op": "1",
+    "target": 0.9,
+    "matchType": "2",
+    "selectedQueryName": "A"
+  },
+  "labels": {
+    "severity": "warning",
+    "service": "host"
+  },
+  "annotations": {
+    "summary": "Root filesystem over 90% full",
+    "description": "Free space with `docker system prune`, or lower retention in SigNoz."
+  },
+  "preferredChannels": [
+    "default"
+  ]
+}

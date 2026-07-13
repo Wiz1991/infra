@@ -1,0 +1,48 @@
+{
+  "alert": "decypharr repair job is FAILING",
+  "alertType": "LOGS_BASED_ALERT",
+  "ruleType": "threshold_rule",
+  "description": "The repair job logged an error. Repair is what fixes broken symlinks when a debrid link dies; if it errors, broken media stays broken.",
+  "evalWindow": "10m",
+  "frequency": "5m",
+  "version": "v5",
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "logs",
+            "stepInterval": "1m",
+            "filter": {
+              "expression": "service.name = 'decypharr' AND component = 'repair' AND severity_text = 'ERROR'"
+            },
+            "aggregations": [
+              {
+                "expression": "count()"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "op": "1",
+    "target": 0.0,
+    "matchType": "1",
+    "selectedQueryName": "A"
+  },
+  "labels": {
+    "severity": "critical",
+    "service": "decypharr"
+  },
+  "annotations": {
+    "summary": "decypharr repair job errored",
+    "description": "Repair runs every 6h. Check `docker logs decypharr | grep '\\[repair\\]'`."
+  },
+  "preferredChannels": [
+    "default"
+  ]
+}

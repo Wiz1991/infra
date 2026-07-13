@@ -1,0 +1,254 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
+# SigNoz — logs, metrics and traces backend. Replaces Grafana/Loki/Tempo/Prometheus.
+#
+# Vendored from `foundryctl forge` output (flavor: compose, metastore: postgres,
+# telemetrykeeper: clickhousekeeper) — see config/casting.yaml. SigNoz no longer
+# ships a maintained docker-compose; Foundry generates one. Regenerate with
+# `foundryctl forge -f apps/signoz/config/casting.yaml` and re-apply the local
+# deltas below, which is why they are kept small and listed here:
+#
+#   - images pinned to release tags instead of :latest
+#   - joined to the existing `traefik` network instead of a private signoz-network
+#   - UI exposed via Traefik rather than a published host port
+#   - mem_limit on every service (this box has 15G total and Plex/Redis want most of it)
+#
+# Ingestion is not published to the host: telemetry arrives from the collector in
+# apps/otel-collector over the traefik network. Service names are load-bearing —
+# the ClickHouse DSNs below refer to them.
+services:
+  signoz:
+    image: signoz/signoz:v0.132.2
+    container_name: signoz-signoz-0
+    logging: *logging
+    environment:
+      - SIGNOZ_SQLSTORE_PROVIDER=postgres
+      - SIGNOZ_SQLSTORE_POSTGRES_DSN=postgres://signoz:${SIGNOZ_POSTGRES_PASSWORD}@signoz-metastore-postgres-0:5432/signoz?sslmode=disable
+      - SIGNOZ_TELEMETRYSTORE_PROVIDER=clickhouse
+      - SIGNOZ_TELEMETRYSTORE_CLICKHOUSE_DSN=tcp://signoz-telemetrystore-clickhouse-0-0:9000
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.signoz.rule=Host(`signoz.${DOMAIN_NAME}`)
+      - traefik.http.routers.signoz.entrypoints=websecure
+      - traefik.http.routers.signoz.tls.certresolver=letsencrypt
+      - traefik.http.routers.signoz.middlewares=security-headers@file
+      - traefik.http.services.signoz.loadbalancer.server.port=8080
+      - service.name=signoz
+      - service.namespace=observability
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      signoz-metastore-postgres:
+        condition: service_healthy
+      signoz-telemetrystore-clickhouse:
+        condition: service_healthy
+    mem_limit: 1g
+    networks:
+      - traefik
+    restart: unless-stopped
+
+  # OTLP ingest. Its pipeline config is partly managed at runtime by the SigNoz
+  # backend over OpAMP, so treat ingester.yaml as the base config only — log
+  # parsing pipelines added in the SigNoz UI are layered on top of it.
+  signoz-ingester:
+    image: signoz/signoz-otel-collector:v0.144.5
+    container_name: signoz-ingester
+    logging: *logging
+    labels:
+      - service.name=signoz-ingester
+      - service.namespace=observability
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        /signoz-otel-collector migrate sync check &&
+        /signoz-otel-collector --config=/etc/otel-collector-config.yaml --manager-config=/etc/opamp-config.yaml --copy-path=/var/tmp/collector-config.yaml
+    environment:
+      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN=tcp://signoz-telemetrystore-clickhouse-0-0:9000
+      - SIGNOZ_OTEL_COLLECTOR_TIMEOUT=10m
+      - LOW_CARDINAL_EXCEPTION_GROUPING=false
+    volumes:
+      - ./config/ingester/ingester.yaml:/etc/otel-collector-config.yaml:ro
+      - ./config/ingester/opamp.yaml:/etc/opamp-config.yaml:ro
+    # No healthcheck: the image ships no shell utilities (no wget, no curl) to
+    # probe with. It does serve a health endpoint on :13133 — reachable from
+    # other containers, just not testable from inside this one.
+    healthcheck:
+      disable: true
+    depends_on:
+      signoz-telemetrystore-migrator:
+        condition: service_completed_successfully
+    mem_limit: 1g
+    networks:
+      traefik:
+        aliases:
+          - signoz-ingester
+    restart: unless-stopped
+
+  # Metadata store (dashboards, alert rules, users). Distinct from the pgvector
+  # instance used by the apps — SigNoz pins its own major version.
+  signoz-metastore-postgres:
+    image: postgres:16-alpine
+    container_name: signoz-metastore-postgres-0
+    logging: *logging
+    labels:
+      - service.name=signoz-metastore-postgres
+      - service.namespace=observability
+    environment:
+      - POSTGRES_DB=signoz
+      - POSTGRES_USER=signoz
+      - POSTGRES_PASSWORD=${SIGNOZ_POSTGRES_PASSWORD}
+    volumes:
+      - signoz_metastore_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U signoz -d signoz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    mem_limit: 512m
+    networks:
+      - traefik
+    restart: unless-stopped
+
+  # Telemetry store. Retention is enforced two ways: ClickHouse system-table TTLs
+  # in config/clickhouse/config.yaml, and per-signal TTLs applied to the SigNoz
+  # API by scripts/signoz-setup.sh. Both matter — the system tables grow
+  # unbounded otherwise and will outgrow the telemetry itself.
+  signoz-telemetrystore-clickhouse:
+    image: clickhouse/clickhouse-server:25.12.5
+    container_name: signoz-telemetrystore-clickhouse-0-0
+    logging: *logging
+    labels:
+      - service.name=signoz-telemetrystore-clickhouse
+      - service.namespace=observability
+    environment:
+      - CLICKHOUSE_SKIP_USER_SETUP=1
+      - CLICKHOUSE_CONFIG=/etc/clickhouse-server/config.yaml
+    volumes:
+      - signoz_clickhouse_data:/var/lib/clickhouse
+      - signoz_clickhouse_user_scripts:/var/lib/clickhouse/user_scripts:ro
+      - ./config/clickhouse/config.yaml:/etc/clickhouse-server/config.yaml:ro
+      - ./config/clickhouse/functions.yaml:/etc/clickhouse-server/functions.yaml:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      signoz-telemetrykeeper:
+        condition: service_healthy
+      signoz-telemetrystore-user-scripts:
+        condition: service_completed_successfully
+    mem_limit: 4g
+    networks:
+      - traefik
+    restart: unless-stopped
+
+  # Coordination for ClickHouse's replicated tables. Single node, but ClickHouse
+  # still requires a keeper quorum to exist.
+  signoz-telemetrykeeper:
+    image: clickhouse/clickhouse-keeper:25.12.5
+    container_name: signoz-telemetrykeeper-clickhousekeeper-0
+    logging: *logging
+    labels:
+      - service.name=signoz-telemetrykeeper
+      - service.namespace=observability
+    entrypoint:
+      - /usr/bin/clickhouse-keeper
+      - --config-file=/etc/clickhouse-keeper/keeper.yaml
+    volumes:
+      # Mounted at /var/lib/clickhouse, not /var/lib/clickhouse-keeper as Foundry
+      # generates: keeper.yaml writes its raft log and snapshots under
+      # /var/lib/clickhouse/coordination, so the generated mount point persists
+      # nothing.
+      - signoz_keeper_data:/var/lib/clickhouse
+      - ./config/keeper/keeper.yaml:/etc/clickhouse-keeper/keeper.yaml:ro
+    healthcheck:
+      test: ["CMD", "clickhouse-keeper-client", "-h", "localhost", "-p", "9181", "-q", "ls"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    mem_limit: 512m
+    networks:
+      - traefik
+    restart: unless-stopped
+
+  # One-shot: fetches the histogramQuantile UDF binary ClickHouse needs for
+  # percentile queries over exponential histograms.
+  signoz-telemetrystore-user-scripts:
+    image: clickhouse/clickhouse-server:25.12.5
+    container_name: signoz-telemetrystore-user-scripts
+    logging: *logging
+    labels:
+      - service.name=signoz-telemetrystore-user-scripts
+      - service.namespace=observability
+    command:
+      - bash
+      - -c
+      - |-
+        version="v0.0.1"
+        node_os=$$(uname -s | tr '[:upper:]' '[:lower:]')
+        node_arch=$$(uname -m | sed s/aarch64/arm64/ | sed s/x86_64/amd64/)
+        echo "Fetching histogram-binary for $${node_os}/$${node_arch}"
+        cd /tmp
+        wget -O histogram-quantile.tar.gz "https://github.com/SigNoz/signoz/releases/download/histogram-quantile%2F$${version}/histogram-quantile_$${node_os}_$${node_arch}.tar.gz"
+        tar -xvzf histogram-quantile.tar.gz
+        mv histogram-quantile /var/lib/clickhouse/user_scripts/histogramQuantile
+    volumes:
+      - signoz_clickhouse_user_scripts:/var/lib/clickhouse/user_scripts
+    networks:
+      - traefik
+    restart: on-failure
+
+  # One-shot: creates and migrates the ClickHouse schemas. Must complete before
+  # the ingester starts, otherwise writes land on missing tables.
+  signoz-telemetrystore-migrator:
+    image: signoz/signoz-otel-collector:v0.144.5
+    container_name: signoz-telemetrystore-migrator
+    logging: *logging
+    labels:
+      - service.name=signoz-telemetrystore-migrator
+      - service.namespace=observability
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        /signoz-otel-collector migrate ready &&
+        /signoz-otel-collector migrate bootstrap &&
+        /signoz-otel-collector migrate sync up &&
+        /signoz-otel-collector migrate async up
+    environment:
+      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN=tcp://signoz-telemetrystore-clickhouse-0-0:9000
+      - SIGNOZ_OTEL_COLLECTOR_TIMEOUT=10m
+    depends_on:
+      signoz-telemetrystore-clickhouse:
+        condition: service_healthy
+    networks:
+      - traefik
+    restart: on-failure
+
+volumes:
+  signoz_metastore_data:
+  signoz_clickhouse_data:
+  signoz_clickhouse_user_scripts:
+  signoz_keeper_data:
+
+networks:
+  traefik:
+    external: true

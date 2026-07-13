@@ -1,0 +1,55 @@
+{
+  "alert": "Container is CRASH-LOOPING",
+  "alertType": "METRIC_BASED_ALERT",
+  "ruleType": "threshold_rule",
+  "description": "Docker is restart-looping a container. restic_backup and restic_prune have been doing this unnoticed (their R2 credentials are missing from .env).",
+  "evalWindow": "5m",
+  "frequency": "1m",
+  "version": "v5",
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "metrics",
+            "stepInterval": "1m",
+            "filter": {
+              "expression": ""
+            },
+            "aggregations": [
+              {
+                "metricName": "docker_container_restarting",
+                "temporality": "unspecified",
+                "timeAggregation": "max",
+                "spaceAggregation": "max"
+              }
+            ],
+            "groupBy": [
+              {
+                "name": "container"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "op": "1",
+    "target": 0.0,
+    "matchType": "2",
+    "selectedQueryName": "A"
+  },
+  "labels": {
+    "severity": "critical"
+  },
+  "annotations": {
+    "summary": "{{$labels.container}} is crash-looping",
+    "description": "Docker keeps restarting it because it exits non-zero. Check its logs."
+  },
+  "preferredChannels": [
+    "default"
+  ]
+}

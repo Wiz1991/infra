@@ -1,0 +1,119 @@
+# ClickHouse — telemetry store for SigNoz.
+#
+# Foundry-generated, with two local changes for this box (15G RAM, ~10G free disk):
+#   - logger.level lowered to warning (information is very chatty on a small box)
+#   - max_server_memory_usage_to_ram_ratio caps ClickHouse against the container
+#     mem_limit rather than total host RAM
+#
+# Every *_log system table below gets a 1-day TTL. This is not optional: they
+# default to unbounded and will happily grow past the size of the actual
+# telemetry, filling the disk.
+path: /var/lib/clickhouse/
+tmp_path: /var/lib/clickhouse/tmp/
+user_files_path: /var/lib/clickhouse/user_files/
+format_schema_path: /var/lib/clickhouse/format_schemas/
+user_scripts_path: /var/lib/clickhouse/user_scripts/
+user_defined_executable_functions_config: '*function.yaml'
+dictionaries_config: '*_dictionary.xml'
+display_name: cluster
+
+listen_host: 0.0.0.0
+http_port: 8123
+tcp_port: 9000
+interserver_http_port: 9009
+
+logger:
+  console: 1
+  count: 3
+  formatting:
+    type: console
+  level: warning
+  size: 100M
+
+max_server_memory_usage_to_ram_ratio: 0.8
+
+macros:
+  replica: "00"
+  shard: "00"
+
+distributed_ddl:
+  path: /clickhouse/task_queue/ddl
+
+remote_servers:
+  cluster:
+    shard:
+      - replica:
+          - host: signoz-telemetrystore-clickhouse-0-0
+            port: 9000
+
+zookeeper:
+  node:
+    - host: signoz-telemetrykeeper-clickhousekeeper-0
+      port: 9181
+
+profiles:
+  default:
+    allow_simdjson: 0
+    load_balancing: random
+    log_queries: 1
+
+quotas:
+  default:
+    interval:
+      duration: 3600
+      errors: 0
+      execution_time: 0
+      queries: 0
+      read_rows: 0
+      result_rows: 0
+
+user_directories:
+  users_xml:
+    path: users.xml
+
+users:
+  default:
+    access_management: 1
+    named_collection_control: 1
+    networks:
+      ip: ::/0
+    password: ""
+    profile: default
+    quota: default
+    show_named_collection: 1
+    show_named_collection_secrets: 1
+
+query_log:
+  flush_interval_milliseconds: 30000
+  partition_by: toYYYYMM(event_date)
+  ttl: "event_date + INTERVAL 1 DAY DELETE"
+query_thread_log:
+  ttl: "event_date + INTERVAL 1 DAY DELETE"
+query_metric_log:
+  ttl: "event_date + INTERVAL 1 DAY DELETE"
+query_views_log:
+  ttl: "event_date + INTERVAL 1 DAY DELETE"
+part_log:
+  ttl: "event_date + INTERVAL 1 DAY DELETE"
+metric_log:
+  flush_interval_milliseconds: 30000
+  ttl: "event_date + INTERVAL 1 DAY DELETE"
+asynchronous_metric_log:
+  ttl: "event_date + INTERVAL 1 DAY DELETE"
+trace_log:
+  flush_interval_milliseconds: 30000
+  ttl: "event_date + INTERVAL 1 DAY DELETE"
+error_log:
+  ttl: "event_date + INTERVAL 1 DAY DELETE"
+latency_log:
+  ttl: "event_date + INTERVAL 1 DAY DELETE"
+processors_profile_log:
+  flush_interval_milliseconds: 30000
+  ttl: "event_date + INTERVAL 1 DAY DELETE"
+session_log:
+  ttl: "event_date + INTERVAL 1 DAY DELETE"
+text_log:
+  flush_interval_milliseconds: 30000
+  ttl: "event_date + INTERVAL 1 DAY DELETE"
+zookeeper_log:
+  ttl: "event_date + INTERVAL 1 DAY DELETE"

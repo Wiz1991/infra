@@ -1,0 +1,24 @@
+# Foundry casting file — the source of truth for what SigNoz generates.
+#
+# The compose file and configs in this directory were produced from this casting
+# and then adapted for this repo (see the header of ../docker-compose.yml for the
+# list of deltas). Kept in git so upgrades are a diff, not an archaeology dig:
+#
+#   curl -fsSL https://signoz.io/foundry.sh | bash
+#   foundryctl forge -f apps/signoz/config/casting.yaml   # writes ./pours/deployment
+#   # diff pours/deployment against apps/signoz, re-apply the local deltas
+#
+# Do not point `foundryctl cast` at this stack — it would recreate the containers
+# outside of the repo's compose topology.
+apiVersion: v1alpha1
+kind: Installation
+metadata:
+  name: signoz
+spec:
+  deployment:
+    flavor: compose
+    mode: docker
+  metastore:
+    kind: postgres
+  telemetrykeeper:
+    kind: clickhousekeeper

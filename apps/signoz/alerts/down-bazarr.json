@@ -1,0 +1,51 @@
+{
+  "alert": "Bazarr is down",
+  "alertType": "METRIC_BASED_ALERT",
+  "ruleType": "threshold_rule",
+  "description": "Bazarr has failed its HTTP health check for 5 minutes straight. Subtitle fetching is down.",
+  "evalWindow": "5m",
+  "frequency": "1m",
+  "version": "v5",
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "metrics",
+            "stepInterval": "1m",
+            "filter": {
+              "expression": "probe.service = 'bazarr' AND http.status_class = '2xx'"
+            },
+            "aggregations": [
+              {
+                "metricName": "httpcheck.status",
+                "temporality": "unspecified",
+                "timeAggregation": "min",
+                "spaceAggregation": "min"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "op": "2",
+    "target": 1.0,
+    "matchType": "2",
+    "selectedQueryName": "A"
+  },
+  "labels": {
+    "severity": "warning",
+    "service": "bazarr"
+  },
+  "annotations": {
+    "summary": "Bazarr is not responding",
+    "description": "Subtitle fetching is down."
+  },
+  "preferredChannels": [
+    "default"
+  ]
+}

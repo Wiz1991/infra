@@ -1,0 +1,718 @@
+# OpenTelemetry Collector — the only thing that collects telemetry in this stack.
+# Everything it gathers is shipped to SigNoz over OTLP (apps/signoz).
+#
+# HOW SERVICES GET THEIR NAME
+# ---------------------------
+# Docker's json-file driver writes container labels into every log line as
+# `attrs` when the container sets `--log-opt labels=...`. Every app compose file
+# in this repo therefore carries:
+#
+#     labels:  [service.name=radarr, service.namespace=automation]
+#     logging: *logging          # json-file, labels=service.name,service.namespace
+#
+# and the docker receiver below promotes those attrs to OTel resource attributes.
+# This is deliberate: the log file path only contains the container *ID*, and the
+# stanza `container` operator only recovers names from Kubernetes CRI paths, so
+# without the labels every log line would arrive anonymous. If a service's logs
+# show up unnamed in SigNoz, it is missing the label/logging block.
+receivers:
+  # All container stdout/stderr.
+  filelog/docker:
+    include: [/var/lib/docker/containers/*/*-json.log]
+    start_at: end
+    include_file_path: true
+    poll_interval: 2s
+    storage: file_storage
+    operators:
+      - type: json_parser
+        parse_from: body
+        timestamp:
+          parse_from: attributes.time
+          layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+
+      # OPT-IN. Nothing's stdout is collected unless the container asks for it:
+      #
+      #     labels:
+      #       - otel.logs=stdout
+      #
+      # Everything else is dropped right here, at the cheapest possible point.
+      # A container that ships its own logs (an OTel SDK, a pino OTLP transport)
+      # simply doesn't set the label, and so can never be double-ingested.
+      #
+      # This governs *stdout scraping only*. Logs read straight from a file —
+      # Plex's own log, Traefik's access log — are configured explicitly in their
+      # own receivers below, which is opt-in by construction.
+      - type: filter
+        expr: 'not (attributes.attrs != nil and "otel.logs" in attributes.attrs and attributes.attrs["otel.logs"] == "stdout")'
+
+      # Promote the labels Docker stamped into the line.
+      - type: move
+        from: attributes.attrs["service.name"]
+        to: resource["service.name"]
+        if: 'attributes.attrs != nil and "service.name" in attributes.attrs'
+      - type: move
+        from: attributes.attrs["service.namespace"]
+        to: resource["service.namespace"]
+        if: 'attributes.attrs != nil and "service.namespace" in attributes.attrs'
+
+      - type: move
+        from: attributes.stream
+        to: attributes["log.iostream"]
+      - type: move
+        from: attributes.log
+        to: body
+
+      # Docker splits any line over 16KB into several records; stitch them back
+      # together before parsing, or long stack traces arrive shredded.
+      - type: recombine
+        combine_field: body
+        source_identifier: attributes["log.file.path"]
+        is_last_entry: 'body endsWith "\n"'
+        max_log_size: 1048576
+
+      # Per-service log formats. decypharr gets its own branch because its
+      # component tag ([repair], [realdebrid], [alldebrid]) is what the repair-job
+      # and provider alerts key off.
+      - type: router
+        default: parse_level_generic
+        routes:
+          - expr: 'resource["service.name"] == "decypharr"'
+            output: recombine_decypharr
+          - expr: 'resource["service.name"] startsWith "workerd-"'
+            output: parse_workerd
+          - expr: 'resource["service.name"] matches "^(radarr|sonarr|prowlarr|bazarr|lidarr|readarr)$"'
+            output: recombine_arr
+
+      # decypharr embeds raw provider responses in its log lines, so an error
+      # spans several lines:
+      #
+      #     ... | ERROR | [realdebrid] realdebrid API error: Status: 451 || Body: {
+      #             "error": "infringing_file",
+      #             "error_code": 35
+      #     }
+      #
+      # Without this, the `{`, the fields and the `}` each arrive as their own
+      # record with no timestamp and no severity — which is exactly the
+      # empty-severity noise you'd see in the UI. A new entry starts only at a
+      # leading timestamp (optionally ANSI-wrapped).
+      - type: recombine
+        id: recombine_decypharr
+        combine_field: body
+        combine_with: ""
+        source_identifier: attributes["log.file.path"]
+        is_first_entry: 'body matches "^(?:\\x1b\\[[0-9;]*m)*\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"'
+        output: parse_decypharr
+
+      # decypharr colorizes its stdout, so the timestamp/level/component
+      # separators are wrapped in ANSI escapes — its plain log *file* is not
+      # colored, which makes this easy to get wrong. `(?:\x1b\[[0-9;]*m|\s)*`
+      # absorbs escapes and whitespace alike, so this matches both forms.
+      - type: regex_parser
+        id: parse_decypharr
+        parse_from: body
+        regex: '^(?:\x1b\[[0-9;]*m|\s)*(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(?:\x1b\[[0-9;]*m|\s)*\|(?:\x1b\[[0-9;]*m|\s)*(?P<level>[A-Z]+)(?:\x1b\[[0-9;]*m|\s)*\|(?:\x1b\[[0-9;]*m|\s)*\[(?P<component>[^\]]+)\]\s*(?P<message>[\s\S]*)$'
+        on_error: send_quiet
+        timestamp:
+          parse_from: attributes.ts
+          layout: '%Y-%m-%d %H:%M:%S'
+          # decypharr timestamps carry no zone and are written in the container's
+          # local time. Without this they'd be read as UTC and every log would
+          # land an hour or two in the past.
+          location: ${env:TZ}
+        severity:
+          parse_from: attributes.level
+
+      # decypharr tags its work inline: `Arr=sonarr Debrid=realdebrid`. Lifting
+      # those into attributes is what lets you ask "show me every realdebrid
+      # failure for sonarr" instead of grepping bodies. Both are optional — a
+      # line without them passes through untouched.
+      # The ANSI strip runs later, in a processor, so the raw body here still has
+      # escapes wrapped around the value (`Arr=<esc>[0msonarr`). Skip them
+      # explicitly or they end up inside the captured attribute.
+      - type: regex_parser
+        id: parse_decypharr_arr
+        parse_from: body
+        regex: 'Arr=(?:\x1b\[[0-9;]*m)*(?P<arr>[^\s\x1b]+)'
+        on_error: send_quiet
+      - type: regex_parser
+        id: parse_decypharr_debrid
+        parse_from: body
+        regex: 'Debrid=(?:\x1b\[[0-9;]*m)*(?P<debrid>[^\s\x1b]+)'
+        on_error: send_quiet
+        output: end
+
+      # moe-radar's workerd processes log pino JSON, whose levels are numeric.
+      - type: json_parser
+        id: parse_workerd
+        parse_from: body
+        on_error: send_quiet
+        output: end
+        timestamp:
+          parse_from: attributes.time
+          layout_type: epoch
+          layout: ms
+        severity:
+          parse_from: attributes.level
+          mapping:
+            trace: 10
+            debug: 20
+            info: 30
+            warn: 40
+            error: 50
+            fatal: 60
+
+      # The .NET *arr apps print an exception across many lines: a `[Error] Class:
+      # message` header, then `[v4.0.16.2944] System.IO.FileNotFoundException…`,
+      # then indented `   at …` stack frames. Docker writes each as its own log
+      # record, so without this a single failure arrives as a dozen orphaned
+      # fragments and the stack trace is unreadable.
+      #
+      # A new entry starts only at a bracketed *log level* — matching a bare `[`
+      # would split the trace again on its `[v4.0.16.2944]` line.
+      - type: recombine
+        id: recombine_arr
+        combine_field: body
+        combine_with: ""
+        source_identifier: attributes["log.file.path"]
+        is_first_entry: 'body matches "^\\[(?i:trace|debug|info|warn|warning|error|fatal)\\]"'
+        output: parse_arr
+
+      # The *arr apps log as `[Error] ImportDecisionMaker: message`. Capturing the
+      # class as `logger` makes the subsystem filterable — import failures vs
+      # indexer errors vs the HTTP client — which is most of the value in an
+      # *arr log. Falls back to the generic level-only parser below when a line
+      # (a stack frame, a bare message) doesn't have that shape.
+      - type: regex_parser
+        id: parse_arr
+        parse_from: body
+        regex: '^\[(?P<level>\w+)\] (?P<logger>[\w.`\[\]<>+-]+): (?P<message>[\s\S]*)$'
+        on_error: send_quiet
+        output: end
+        severity:
+          parse_from: attributes.level
+
+      # Covers everything else: a bare [Info] / [Error] tag anywhere in the line.
+      # Anything that doesn't match passes through unparsed rather than dropped.
+      - type: regex_parser
+        id: parse_level_generic
+        parse_from: body
+        regex: '(?i)\[(?P<level>trace|debug|info|warn|warning|error|fatal)\]'
+        on_error: send_quiet
+        output: end
+        severity:
+          parse_from: attributes.level
+
+      - type: noop
+        id: end
+
+      # Drop the scaffolding: the raw docker envelope fields and the capture
+      # groups already promoted to severity/resource. Left in place they get
+      # stored on every single log record in ClickHouse.
+      - type: remove
+        field: attributes.attrs
+        on_error: send_quiet
+      - type: remove
+        field: attributes.time
+        on_error: send_quiet
+      - type: remove
+        field: attributes.level
+        on_error: send_quiet
+      - type: remove
+        field: attributes.ts
+        on_error: send_quiet
+      - type: remove
+        field: attributes.message
+        on_error: send_quiet
+      - type: remove
+        field: attributes["log.file.name"]
+        on_error: send_quiet
+      - type: remove
+        field: attributes["log.file.path"]
+        on_error: send_quiet
+
+  # Plex's own log. linuxserver/plex only puts s6 supervisor chatter on stdout —
+  # the real server log (playback, transcode, scanner, library) is file-only.
+  filelog/plex:
+    include: ["/logs/plex/Plex Media Server.log"]
+    start_at: end
+    include_file_path: true
+    storage: file_storage
+    multiline:
+      line_start_pattern: '^\w{3} \d{1,2}, \d{4} \d{2}:\d{2}:\d{2}\.\d{3} \['
+    operators:
+      # Plex logs every HTTP request at DEBUG. On a box with ~10G free disk that
+      # is the single largest source of log volume and it is almost never what
+      # you want — drop it at the edge. Turn off "Enable Plex Media Server debug
+      # logging" in Plex settings to cut it at the source too.
+      - type: filter
+        expr: 'body contains "] DEBUG - " or body contains "] VERBOSE - "'
+
+      - type: regex_parser
+        parse_from: body
+        regex: '^(?P<ts>\w{3} \d{1,2}, \d{4} \d{2}:\d{2}:\d{2}\.\d{3}) \[(?P<thread>[^\]]+)\] (?P<level>\w+) - (?P<message>[\s\S]*)$'
+        on_error: send_quiet
+        timestamp:
+          parse_from: attributes.ts
+          layout: '%b %d, %Y %H:%M:%S.%L'
+          # Plex logs in local time with no zone marker — see decypharr above.
+          location: ${env:TZ}
+        severity:
+          parse_from: attributes.level
+
+      - type: add
+        field: resource["service.name"]
+        value: plex
+      - type: add
+        field: resource["service.namespace"]
+        value: media
+
+      - type: remove
+        field: attributes.ts
+        on_error: send_quiet
+      - type: remove
+        field: attributes.level
+        on_error: send_quiet
+      - type: remove
+        field: attributes.message
+        on_error: send_quiet
+
+  # Traefik access log (4xx/5xx only — see apps/traefik/config/traefik.yml).
+  filelog/traefik_access:
+    include: [/logs/traefik/access.log]
+    start_at: end
+    storage: file_storage
+    operators:
+      # An access log carries no severity of its own, so every record would land
+      # with an empty level. Derive it from the response code instead — the log
+      # is already filtered to 4xx/5xx, so this cleanly separates "client sent
+      # junk" from "our service broke".
+      - type: json_parser
+        parse_from: body
+        timestamp:
+          parse_from: attributes.StartUTC
+          layout_type: gotime
+          layout: '2006-01-02T15:04:05.999999999Z07:00'
+        severity:
+          parse_from: attributes.DownstreamStatus
+          mapping:
+            info:
+              - min: 200
+                max: 399
+            warn:
+              - min: 400
+                max: 499
+            error:
+              - min: 500
+                max: 599
+      - type: add
+        field: resource["service.name"]
+        value: traefik
+      - type: add
+        field: resource["service.namespace"]
+        value: infra
+      - type: add
+        field: attributes["log.type"]
+        value: access
+
+  # Per-container CPU/memory/network/IO, plus restart counts — the signal for
+  # "something is crash-looping".
+  docker_stats:
+    endpoint: unix:///var/run/docker.sock
+    collection_interval: 30s
+    timeout: 20s
+    # Read the same labels the logs are tagged with, so a container's CPU/memory
+    # lines up with its logs under one service name. Falling back to
+    # container.name would drift: the container is `signoz-telemetrystore-
+    # clickhouse-0-0` while the service is `signoz-telemetrystore-clickhouse`.
+    container_labels_to_metric_labels:
+      service.name: service.name
+      service.namespace: service.namespace
+    metrics:
+      container.cpu.utilization:
+        enabled: true
+      container.memory.percent:
+        enabled: true
+      container.memory.usage.limit:
+        enabled: true
+      container.restarts:
+        enabled: true
+      container.uptime:
+        enabled: true
+
+  hostmetrics:
+    root_path: /hostfs
+    collection_interval: 30s
+    scrapers:
+      # utilization (a 0-1 ratio) is opt-in for memory and filesystem; without it
+      # you only get cumulative counters, which are useless for a "disk over 90%"
+      # alert. Note there is no system.cpu.utilization: this collector build does
+      # not emit one even when enabled, so host CPU is derived on the dashboard
+      # as rate(system.cpu.time) over the non-idle states (= cores busy).
+      cpu:
+      load:
+      memory:
+        metrics:
+          system.memory.utilization:
+            enabled: true
+      paging:
+      processes:
+      network:
+      disk:
+      filesystem:
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+        # The rclone/debrid FUSE mounts must be excluded: statfs() on a stale
+        # mount blocks, and a blocked scraper takes the whole metrics pipeline
+        # down with it. Only real local filesystems are interesting anyway.
+        exclude_fs_types:
+          match_type: strict
+          fs_types:
+            [autofs, binfmt_misc, bpf, cgroup, cgroup2, configfs, debugfs, devpts,
+             devtmpfs, fuse.rclone, fuse.decypharr, fusectl, hugetlbfs, iso9660,
+             mqueue, nsfs, overlay, proc, procfs, pstore, rpc_pipefs, securityfs,
+             selinuxfs, squashfs, sysfs, tracefs]
+        exclude_mount_points:
+          match_type: regexp
+          mount_points: ['/(var/lib/docker|snap|run|dev|proc|sys)($|/).*', '/mnt/(media|remote|symlinks)($|/).*']
+
+  # Existing exporters, scraped straight into SigNoz. The job name becomes
+  # service.name, which is why each job is named after the app it describes and
+  # not after the exporter container in front of it.
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: radarr
+          scrape_interval: 60s
+          static_configs:
+            - targets: [exportarr_radarr:9708]
+        - job_name: sonarr
+          scrape_interval: 60s
+          static_configs:
+            - targets: [exportarr_sonarr:9707]
+        - job_name: prowlarr
+          scrape_interval: 60s
+          static_configs:
+            - targets: [exportarr_prowlarr:9709]
+        - job_name: bazarr
+          scrape_interval: 60s
+          static_configs:
+            - targets: [exportarr_bazarr:9710]
+        - job_name: redis
+          scrape_interval: 60s
+          static_configs:
+            - targets: [redis_exporter:9121]
+        - job_name: postgres
+          scrape_interval: 60s
+          static_configs:
+            - targets: [postgres_exporter:9187]
+        - job_name: traefik
+          scrape_interval: 60s
+          static_configs:
+            - targets: [traefik:8080]
+
+        # Plex itself: per-library size/duration and playback bandwidth. The
+        # exporter emits unprefixed names (library_storage_total, host_cpu_util),
+        # which would be ambiguous next to the host's own metrics — so prefix
+        # them plex_* on the way in.
+        - job_name: plex
+          scrape_interval: 60s
+          static_configs:
+            - targets: [plex_exporter:9000]
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: '(library_.*|host_.*|transmit_bytes_total|estimated_transmit_bytes_total|server_info)'
+              target_label: __name__
+              # $$ escapes the $ so the collector doesn't read ${1} as an env var.
+              replacement: 'plex_$${1}'
+
+        # Who is watching what, and whether Plex is transcoding for them.
+        - job_name: tautulli
+          scrape_interval: 60s
+          static_configs:
+            - targets: [tautulli_exporter:9487]
+
+        # Container healthcheck state and restart loops — docker_stats reports
+        # neither, so without this a container can fail its own healthcheck
+        # forever and nothing notices.
+        - job_name: docker
+          scrape_interval: 30s
+          static_configs:
+            - targets: [docker_health_exporter:9488]
+        - job_name: otel-collector
+          scrape_interval: 60s
+          static_configs:
+            - targets: [localhost:8888]
+
+  # Uptime probes — what the "is Plex down / is Real-Debrid down" alerts run on.
+  #
+  # GOTCHA: httpcheck.status emits one series *per status class* per target
+  # (1xx, 2xx, 3xx, 4xx, 5xx), with value 1 on the class that matched and 0 on
+  # all the others. So "status == 0" does NOT mean down — the 0-valued series
+  # always exist. An up check is `httpcheck.status == 1 AND http.status_class ==
+  # '2xx'`, and every alert rule in apps/signoz/alerts/ filters on that class.
+  # Without the class filter an alert fires permanently.
+  #
+  # Plex is on host networking, hence host.docker.internal rather than a
+  # container name.
+  httpcheck:
+    collection_interval: 60s
+    targets:
+      - endpoints: ["http://host.docker.internal:32400/identity"]
+        method: GET
+      - endpoints: ["http://decypharr:8282/"]
+        method: GET
+      - endpoints: ["http://radarr:7878/ping"]
+        method: GET
+      - endpoints: ["http://sonarr:8989/ping"]
+        method: GET
+      - endpoints: ["http://prowlarr:9696/ping"]
+        method: GET
+      - endpoints: ["http://bazarr:6767/"]
+        method: GET
+      - endpoints: ["http://seerr:5055/api/v1/status"]
+        method: GET
+      - endpoints: ["http://tautulli:8181/status"]
+        method: GET
+      - endpoints: ["http://zilean:8181/healthchecks/ping"]
+        method: GET
+      # Debrid providers, probed directly at their public API so an outage is
+      # attributable to the provider rather than to decypharr.
+      - endpoints: ["https://api.real-debrid.com/rest/1.0/time"]
+        method: GET
+      - endpoints: ["https://api.alldebrid.com/v4/ping"]
+        method: GET
+
+  # Host logs (kernel, systemd, sshd, dockerd, tailscaled). These are the one
+  # signal SigNoz was missing: host *metrics* were already shipped, but the
+  # journal stayed local — so a container crash-looping showed up only as disk
+  # pressure, never on a dashboard.
+  #
+  # rsyslog forwards here rather than using the journald receiver: that receiver
+  # shells out to journalctl, and this image is distroless (no shell, no
+  # journalctl). rsyslog is already running on the host anyway.
+  #
+  # Listens on loopback only (see the port binding in docker-compose.yml).
+  syslog/host:
+    tcp:
+      listen_address: 0.0.0.0:54527
+    protocol: rfc5424
+
+processors:
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 400
+    spike_limit_mib: 100
+
+  resourcedetection:
+    detectors: [env, system]
+    system:
+      hostname_sources: [os]
+
+  resource/env:
+    attributes:
+      - key: deployment.environment
+        value: homelab
+        action: upsert
+      # Overrides whatever resourcedetection guessed. Inside a container the
+      # "system" hostname is the container ID, which is both meaningless and
+      # different after every recreate — SigNoz would list each one as a
+      # separate host.
+      - key: host.name
+        value: ${env:HOST_NAME}
+        action: upsert
+
+  # docker_stats hands the container labels back as datapoint attributes; lift
+  # them to the resource, which is where service.name has to live for SigNoz to
+  # group by it. Containers with no label (e.g. the minecraft server, which this
+  # repo doesn't manage) fall back to their container name so they still appear.
+  transform/container_metrics:
+    error_mode: ignore
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(resource.attributes["service.name"], attributes["service.name"])
+            where attributes["service.name"] != nil
+          - set(resource.attributes["service.namespace"], attributes["service.namespace"])
+            where attributes["service.namespace"] != nil
+          - delete_key(attributes, "service.name")
+          - delete_key(attributes, "service.namespace")
+      - context: resource
+        statements:
+          - set(attributes["service.name"], attributes["container.name"])
+            where attributes["service.name"] == nil and attributes["container.name"] != nil
+
+  # Group services so SigNoz can slice by namespace ("show me everything media").
+  # Keep in sync with the service.namespace labels in the app compose files —
+  # this is the fallback for signals that don't carry one (container metrics,
+  # exporter scrapes).
+  # Several services (decypharr, zilean) colorize stdout. The escape codes are
+  # noise once severity has been parsed out of them, and they make bodies
+  # unreadable in the SigNoz UI.
+  transform/strip_ansi:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - replace_pattern(body, "\\x1b\\[[0-9;]*m", "") where IsString(body)
+
+  # Each app writes its level in its own style — "Error", "ERROR", "error", "Warn"
+  # vs "warning", pino's numeric 50. The parsers above already resolve all of
+  # them to the correct severity_number, but severity_text kept the raw string,
+  # so SigNoz showed three different "error" levels. Rewrite the text from the
+  # number so there is exactly one spelling of each level across every service.
+  transform/normalize_severity:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - set(severity_text, "TRACE") where severity_number >= 1 and severity_number <= 4
+          - set(severity_text, "DEBUG") where severity_number >= 5 and severity_number <= 8
+          - set(severity_text, "INFO")  where severity_number >= 9 and severity_number <= 12
+          - set(severity_text, "WARN")  where severity_number >= 13 and severity_number <= 16
+          - set(severity_text, "ERROR") where severity_number >= 17 and severity_number <= 20
+          - set(severity_text, "FATAL") where severity_number >= 21 and severity_number <= 24
+
+  transform/namespaces:
+    error_mode: ignore
+    log_statements:
+      - context: resource
+        statements:
+          - set(attributes["service.namespace"], "media")
+            where attributes["service.namespace"] == nil and IsMatch(attributes["service.name"], "^(plex|tautulli|seerr)$")
+          - set(attributes["service.namespace"], "automation")
+            where attributes["service.namespace"] == nil and IsMatch(attributes["service.name"], "^(radarr|sonarr|sonarr_anime|prowlarr|bazarr|profilarr|profilarr_anime|anibridge|newtarr)$")
+          - set(attributes["service.namespace"], "debrid")
+            where attributes["service.namespace"] == nil and IsMatch(attributes["service.name"], "^(decypharr|byparr|zilean|zilean_postgres)$")
+          - set(attributes["service.namespace"], "infra")
+            where attributes["service.namespace"] == nil and IsMatch(attributes["service.name"], "^(traefik|redis|pgvector|postgres|cloudflared|adguard|watchtower|restic.*)$")
+          - set(attributes["service.namespace"], "observability")
+            where attributes["service.namespace"] == nil and IsMatch(attributes["service.name"], "^(signoz.*|otel-collector|exportarr.*|.*_exporter)$")
+    metric_statements:
+      - context: resource
+        statements:
+          - set(attributes["service.namespace"], "media")
+            where attributes["service.namespace"] == nil and IsMatch(attributes["service.name"], "^(plex|tautulli|seerr)$")
+          - set(attributes["service.namespace"], "automation")
+            where attributes["service.namespace"] == nil and IsMatch(attributes["service.name"], "^(radarr|sonarr|sonarr_anime|prowlarr|bazarr|profilarr|profilarr_anime|anibridge|newtarr)$")
+          - set(attributes["service.namespace"], "debrid")
+            where attributes["service.namespace"] == nil and IsMatch(attributes["service.name"], "^(decypharr|byparr|zilean|zilean_postgres)$")
+          - set(attributes["service.namespace"], "infra")
+            where attributes["service.namespace"] == nil and IsMatch(attributes["service.name"], "^(traefik|redis|pgvector|postgres|cloudflared|adguard|watchtower|restic.*)$")
+          - set(attributes["service.namespace"], "observability")
+            where attributes["service.namespace"] == nil and IsMatch(attributes["service.name"], "^(signoz.*|otel-collector|exportarr.*|.*_exporter)$")
+
+  # httpcheck reports only the URL it probed. Give each probe a stable service
+  # name so alert rules read `probe.service = plex` instead of a raw URL.
+  transform/probes:
+    error_mode: ignore
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(attributes["probe.service"], "plex")        where IsMatch(attributes["http.url"], ":32400")
+          - set(attributes["probe.service"], "decypharr")   where IsMatch(attributes["http.url"], ":8282")
+          - set(attributes["probe.service"], "radarr")      where IsMatch(attributes["http.url"], ":7878")
+          - set(attributes["probe.service"], "sonarr")      where IsMatch(attributes["http.url"], ":8989")
+          - set(attributes["probe.service"], "prowlarr")    where IsMatch(attributes["http.url"], ":9696")
+          - set(attributes["probe.service"], "bazarr")      where IsMatch(attributes["http.url"], ":6767")
+          - set(attributes["probe.service"], "seerr")       where IsMatch(attributes["http.url"], ":5055")
+          - set(attributes["probe.service"], "tautulli")    where IsMatch(attributes["http.url"], ":8181/status")
+          - set(attributes["probe.service"], "zilean")      where IsMatch(attributes["http.url"], "healthchecks")
+          - set(attributes["probe.service"], "realdebrid")  where IsMatch(attributes["http.url"], "real-debrid")
+          - set(attributes["probe.service"], "alldebrid")   where IsMatch(attributes["http.url"], "alldebrid")
+          - set(attributes["probe.kind"], "provider")
+            where IsMatch(attributes["http.url"], "^https://api\\.(real-debrid|alldebrid)")
+
+  resource/probes:
+    attributes:
+      - key: service.name
+        value: uptime
+        action: upsert
+      - key: service.namespace
+        value: observability
+        action: upsert
+
+  resource/host:
+    attributes:
+      - key: service.name
+        value: host
+        action: upsert
+      - key: service.namespace
+        value: infra
+        action: upsert
+
+  batch:
+    send_batch_size: 8192
+    send_batch_max_size: 10000
+    timeout: 5s
+
+exporters:
+  otlp/signoz:
+    endpoint: signoz-ingester:4317
+    tls:
+      insecure: true
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 300s
+
+extensions:
+  # Checkpoints how far into each log file we've read. Without this, a collector
+  # restart re-reads from the end and silently loses whatever arrived meanwhile.
+  file_storage:
+    directory: /var/lib/otelcol/storage
+    create_directory: true
+    timeout: 10s
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [file_storage, health_check]
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+  pipelines:
+    logs:
+      receivers: [filelog/docker, filelog/plex, filelog/traefik_access]
+      processors: [memory_limiter, resourcedetection, resource/env, transform/strip_ansi, transform/normalize_severity, transform/namespaces, batch]
+      exporters: [otlp/signoz]
+
+    # Host logs get their own pipeline so they can reuse resource/host — the same
+    # processor metrics/host uses. That puts host logs and host metrics under one
+    # service ("host" / namespace "infra") in SigNoz, instead of stranding the
+    # logs under a service nobody thinks to look at. The syslog receiver parses
+    # RFC5424 priority into severity natively, so the container-log severity and
+    # ANSI-stripping transforms don't apply here. host.name comes from
+    # resource/env (= HOST_NAME = homelab, same as tailscale).
+    logs/host:
+      receivers: [syslog/host]
+      processors: [memory_limiter, resourcedetection, resource/env, resource/host, batch]
+      exporters: [otlp/signoz]
+
+    metrics/containers:
+      receivers: [docker_stats]
+      processors: [memory_limiter, resourcedetection, resource/env, transform/container_metrics, transform/namespaces, batch]
+      exporters: [otlp/signoz]
+
+    metrics/host:
+      receivers: [hostmetrics]
+      processors: [memory_limiter, resourcedetection, resource/env, resource/host, batch]
+      exporters: [otlp/signoz]
+
+    metrics/exporters:
+      receivers: [prometheus]
+      processors: [memory_limiter, resourcedetection, resource/env, transform/namespaces, batch]
+      exporters: [otlp/signoz]
+
+    metrics/probes:
+      receivers: [httpcheck]
+      processors: [memory_limiter, resourcedetection, resource/env, transform/probes, resource/probes, batch]
+      exporters: [otlp/signoz]
+
+    # Anything instrumented natively (moe-radar's workerd processes today) sends
+    # OTLP straight to signoz-ingester, not here — this collector is for
+    # telemetry the apps can't emit themselves.

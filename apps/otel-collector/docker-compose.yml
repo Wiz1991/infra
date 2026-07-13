@@ -1,0 +1,68 @@
+# Collection agent for everything the apps can't report themselves: container
+# logs, container/host metrics, the existing Prometheus exporters, and uptime
+# probes. Ships to SigNoz over OTLP. See config/config.yaml for the details.
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.156.0
+    container_name: otel-collector
+    command: ["--config=/etc/otelcol/config.yaml"]
+    # Runs as root: /var/lib/docker/containers is mode 0710 root:root, and the
+    # image's default uid 10001 cannot read the container log files.
+    user: "0:0"
+    volumes:
+      - ./config/config.yaml:/etc/otelcol/config.yaml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /:/hostfs:ro
+      - ${APPDATA_DIR}/plex/Library/Application Support/Plex Media Server/Logs:/logs/plex:ro
+      - ${APPDATA_DIR}/traefik/logs:/logs/traefik:ro
+      - otel_collector_data:/var/lib/otelcol
+    # Host rsyslog forwards the journal here (syslog/host receiver). Bound to
+    # loopback: this is a plaintext syslog socket and must not be reachable from
+    # the LAN.
+    ports:
+      - "127.0.0.1:54527:54527/tcp"
+    # Plex runs with host networking, so it is only reachable via the host
+    # gateway rather than by container name.
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    # Without this the collector reports host.name as its own container ID, so
+    # every time it is recreated SigNoz gains another phantom "host" in the
+    # Infrastructure view. Pin it to the real machine (same name as tailscale).
+    hostname: ${HOST_NAME:-homelab}
+    environment:
+      - TZ=${TZ}
+      - HOST_NAME=${HOST_NAME:-homelab}
+    # The image has no shell utilities to probe with (no wget, no curl), so there
+    # is nothing to run a healthcheck from inside the container. It serves
+    # health_check on :13133, reachable from other containers.
+    healthcheck:
+      disable: true
+    depends_on:
+      # service_started, not service_healthy: the ingester has no healthcheck
+      # (see apps/signoz/docker-compose.yml). The collector retries its OTLP
+      # exports anyway, so a few seconds of head start is harmless.
+      signoz-ingester:
+        condition: service_started
+    mem_limit: 512m
+    logging: *logging
+    labels:
+      - service.name=otel-collector
+      - service.namespace=observability
+    networks:
+      - traefik
+    restart: unless-stopped
+
+volumes:
+  otel_collector_data:
+
+networks:
+  traefik:
+    external: true

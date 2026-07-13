@@ -1,10 +1,26 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
 services:
   watchtower:
     image: containrrr/watchtower:latest
     container_name: watchtower
+    logging: *logging
+    labels:
+      - service.name=watchtower
+      - service.namespace=infra
     restart: unless-stopped
     environment:
       - TZ=${TZ}
+      # containrrr/watchtower is unmaintained and still negotiates Docker API
+      # 1.25, which Docker 29 refuses (minimum 1.40). Without this it crash-loops
+      # on "client version 1.25 is too old". It only kept working before because
+      # the container predated the Docker upgrade and was never recreated.
+      - DOCKER_API_VERSION=1.44
       - WATCHTOWER_LABEL_ENABLE=true
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_POLL_INTERVAL=300

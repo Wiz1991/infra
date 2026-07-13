@@ -7,13 +7,25 @@ ping: {}
 log:
   level: INFO
 
+# JSON so the collector can lift status code, router, service and latency into
+# structured fields instead of regexing a text line. Still filtered to errors
+# only — logging every 2xx would dwarf everything else in ClickHouse.
 accessLog:
   filePath: /var/log/traefik/access.log
+  format: json
   bufferingSize: 100
   filters:
     statusCodes:
       - "400-499"
       - "500-599"
+
+# Scraped by the otel-collector (job: traefik) off the :8080 entrypoint.
+metrics:
+  prometheus:
+    entryPoint: traefik
+    addEntryPointsLabels: true
+    addRoutersLabels: true
+    addServicesLabels: true
 
 entryPoints:
   web:
