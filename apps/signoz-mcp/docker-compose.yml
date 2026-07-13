@@ -1,0 +1,40 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: service.name,service.namespace,otel.logs
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  # SigNoz MCP server (HTTP transport) so AI clients can query observability
+  # data. Talks to SigNoz internally over the traefik network (http://signoz:8080),
+  # bypassing the tunnel/Access. Reachable at mcp.signoz.${DOMAIN_NAME}, which
+  # resolves to the host's tailscale IP (grey-cloud DNS) — tailnet-only, not
+  # public. Holds a SigNoz API key server-side, so it must never be exposed to
+  # the internet.
+  signoz-mcp:
+    image: signoz/signoz-mcp-server:latest
+    container_name: signoz-mcp
+    logging: *logging
+    environment:
+      - TRANSPORT_MODE=http
+      - MCP_SERVER_PORT=8000
+      - SIGNOZ_URL=http://signoz:8080
+      - SIGNOZ_API_KEY=${SIGNOZ_API_KEY}
+      - LOG_LEVEL=info
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.signoz-mcp.rule=Host(`mcp.signoz.${DOMAIN_NAME}`)
+      - traefik.http.routers.signoz-mcp.entrypoints=websecure
+      - traefik.http.routers.signoz-mcp.tls.certresolver=letsencrypt
+      - traefik.http.routers.signoz-mcp.middlewares=security-headers@file
+      - traefik.http.services.signoz-mcp.loadbalancer.server.port=8000
+      - service.name=signoz-mcp
+      - service.namespace=observability
+    networks:
+      - traefik
+    restart: unless-stopped
+
+networks:
+  traefik:
+    external: true

@@ -5,6 +5,7 @@ include:
   - apps/cloudflared/docker-compose.yml
   - apps/signoz/docker-compose.yml
   - apps/otel-collector/docker-compose.yml
+  - apps/signoz-mcp/docker-compose.yml
   - apps/bazarr/docker-compose.yml
   - apps/decypharr/docker-compose.yml
   - apps/plex/docker-compose.yml
