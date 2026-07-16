@@ -1,0 +1,49 @@
+{
+  "alert": "Sonarr cannot import completed downloads (dead debrid links)",
+  "alertType": "LOGS_BASED_ALERT",
+  "ruleType": "threshold_rule",
+  "description": "Sonarr keeps failing to read files it is trying to import. With debrid symlinks this means the target is dead: the mount lists the file but reads return I/O errors (an expired torrent RD refuses to re-insert).",
+  "evalWindow": "15m",
+  "frequency": "5m",
+  "version": "v5",
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "logs",
+            "stepInterval": "1m",
+            "filter": {
+              "expression": "service.name = 'sonarr' AND severity_text = 'ERROR' AND logger IN ('ImportDecisionMaker', 'VideoFileInfoReader')"
+            },
+            "aggregations": [
+              {
+                "expression": "count()"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "op": "1",
+    "target": 5.0,
+    "matchType": "1",
+    "selectedQueryName": "A"
+  },
+  "labels": {
+    "severity": "warning",
+    "service": "sonarr"
+  },
+  "annotations": {
+    "summary": "Sonarr import errors: unreadable files behind the symlinks",
+    "description": "Find the release in the arr's queue, then delete + re-add that torrent in decypharr (repair can't fix a can't-retry re-insert). Cross-check decypharr logs for 'Failed to stream'."
+  },
+  "preferredChannels": [
+    "default",
+    "claude-remediator"
+  ]
+}

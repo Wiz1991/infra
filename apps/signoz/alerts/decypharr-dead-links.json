@@ -1,0 +1,49 @@
+{
+  "alert": "decypharr is serving DEAD debrid links",
+  "alertType": "LOGS_BASED_ALERT",
+  "ruleType": "threshold_rule",
+  "description": "decypharr's WebDAV layer failed to stream a file \u2014 the debrid link behind a symlink is dead and re-insert is failing. The arrs see these as I/O errors and their imports stall; Plex playback of the affected items dies too.",
+  "evalWindow": "15m",
+  "frequency": "5m",
+  "version": "v5",
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "logs",
+            "stepInterval": "1m",
+            "filter": {
+              "expression": "service.name = 'decypharr' AND severity_text = 'ERROR' AND body CONTAINS 'Failed to stream'"
+            },
+            "aggregations": [
+              {
+                "expression": "count()"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "op": "1",
+    "target": 3.0,
+    "matchType": "1",
+    "selectedQueryName": "A"
+  },
+  "labels": {
+    "severity": "warning",
+    "service": "decypharr"
+  },
+  "annotations": {
+    "summary": "decypharr can't stream: dead debrid link behind a symlink",
+    "description": "The log line names the file and torrent id. Delete + re-add that torrent in decypharr; if it says \"can't retry re-insert\", repair will NOT fix it."
+  },
+  "preferredChannels": [
+    "default",
+    "claude-remediator"
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "alert": "Radarr queue processing is CRASHING (imports frozen)",
+  "alertType": "LOGS_BASED_ALERT",
+  "ruleType": "threshold_rule",
+  "description": "Radarr's QueueService is throwing on every queue refresh, which freezes ALL imports \u2014 downloads finish in decypharr but never reach the library. Usually a torrent with a null/empty name in decypharr's qBit API.",
+  "evalWindow": "15m",
+  "frequency": "5m",
+  "version": "v5",
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "logs",
+            "stepInterval": "1m",
+            "filter": {
+              "expression": "service.name = 'radarr' AND severity_text = 'ERROR' AND body CONTAINS 'QueueService failed'"
+            },
+            "aggregations": [
+              {
+                "expression": "count()"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "op": "1",
+    "target": 2.0,
+    "matchType": "1",
+    "selectedQueryName": "A"
+  },
+  "labels": {
+    "severity": "critical",
+    "service": "radarr"
+  },
+  "annotations": {
+    "summary": "Radarr imports are frozen (QueueService crashing)",
+    "description": "List decypharr's torrents and delete any with an empty name: curl -s http://decypharr:8282/api/v2/torrents/info | jq '.[] | select(.name == null or .name == \"\")'. Then run Sonarr's RefreshMonitoredDownloads command."
+  },
+  "preferredChannels": [
+    "default",
+    "claude-remediator"
+  ]
+}

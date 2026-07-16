@@ -49,7 +49,8 @@ PROVIDERS = {
 
 def rule(name, *, alert_type, severity, desc, summary, detail,
          signal, aggregations, filt, evalw, freq, op, target, match,
-         group=(), step="1m", extra_condition=None, labels=None):
+         group=(), step="1m", extra_condition=None, labels=None,
+         channels=None):
     cond = {
         "compositeQuery": {
             "queryType": "builder",
@@ -84,7 +85,7 @@ def rule(name, *, alert_type, severity, desc, summary, detail,
         "condition": cond,
         "labels": {"severity": severity, **(labels or {})},
         "annotations": {"summary": summary, "description": detail},
-        "preferredChannels": CHANNELS,
+        "preferredChannels": list(channels) if channels else CHANNELS,
     }
 
 
@@ -188,6 +189,80 @@ rules["decypharr-repair-stalled"] = rule(
     evalw="8h", freq="30m", op="2", target=1.0, match="1", step="30m",
     extra_condition={"alertOnAbsent": True, "absentFor": 480},
     labels={"service": "decypharr"},
+)
+
+# ---- arr import pipeline -------------------------------------------------
+# Sonarr/Radarr get stuck *silently*: one malformed item in the download client
+# (2026-07-16: two nameless errored torrents in decypharr) makes QueueService
+# throw on every TrackedDownloadRefreshedEvent, and from then on nothing
+# imports — grabs pile up "completed" in decypharr while the arr looks healthy
+# to every up-check. The error repeats every minute, so a low count threshold
+# over 15m catches it fast without paging on a single transient.
+#
+# These five rules also route to the "claude-remediator" webhook channel
+# (apps/claude-remediator/), which spawns a sandboxed headless Claude Code
+# session that applies the known fixes and leaves an outcome note in SigNoz
+# under service.name = 'claude-remediator'. The channel must exist in SigNoz
+# (Settings → Alert Channels, webhook, admin-only to create) or rule updates
+# referencing it will fail.
+PIPELINE_CHANNELS = ["default", "claude-remediator"]
+
+for key in ("sonarr", "radarr"):
+    label = key.capitalize()
+    rules[f"{key}-queue-crashing"] = rule(
+        f"{label} queue processing is CRASHING (imports frozen)",
+        alert_type="LOGS_BASED_ALERT", severity="critical",
+        desc=f"{label}'s QueueService is throwing on every queue refresh, which freezes "
+             f"ALL imports — downloads finish in decypharr but never reach the library. "
+             f"Usually a torrent with a null/empty name in decypharr's qBit API.",
+        summary=f"{label} imports are frozen (QueueService crashing)",
+        detail=f"List decypharr's torrents and delete any with an empty name: "
+               f"curl -s http://decypharr:8282/api/v2/torrents/info | "
+               f"jq '.[] | select(.name == null or .name == \"\")'. "
+               f"Then run Sonarr's RefreshMonitoredDownloads command.",
+        signal="logs",
+        aggregations=[{"expression": "count()"}],
+        filt=f"service.name = '{key}' AND severity_text = 'ERROR' "
+             f"AND body CONTAINS 'QueueService failed'",
+        evalw="15m", freq="5m", op="1", target=2.0, match="1",
+        labels={"service": key},
+        channels=PIPELINE_CHANNELS,
+    )
+    rules[f"{key}-imports-failing"] = rule(
+        f"{label} cannot import completed downloads (dead debrid links)",
+        alert_type="LOGS_BASED_ALERT", severity="warning",
+        desc=f"{label} keeps failing to read files it is trying to import. With debrid "
+             f"symlinks this means the target is dead: the mount lists the file but "
+             f"reads return I/O errors (an expired torrent RD refuses to re-insert).",
+        summary=f"{label} import errors: unreadable files behind the symlinks",
+        detail="Find the release in the arr's queue, then delete + re-add that torrent "
+               "in decypharr (repair can't fix a can't-retry re-insert). Cross-check "
+               "decypharr logs for 'Failed to stream'.",
+        signal="logs",
+        aggregations=[{"expression": "count()"}],
+        filt=f"service.name = '{key}' AND severity_text = 'ERROR' "
+             f"AND logger IN ('ImportDecisionMaker', 'VideoFileInfoReader')",
+        evalw="15m", freq="5m", op="1", target=5.0, match="1",
+        labels={"service": key},
+        channels=PIPELINE_CHANNELS,
+    )
+
+rules["decypharr-dead-links"] = rule(
+    "decypharr is serving DEAD debrid links",
+    alert_type="LOGS_BASED_ALERT", severity="warning",
+    desc="decypharr's WebDAV layer failed to stream a file — the debrid link behind a "
+         "symlink is dead and re-insert is failing. The arrs see these as I/O errors "
+         "and their imports stall; Plex playback of the affected items dies too.",
+    summary="decypharr can't stream: dead debrid link behind a symlink",
+    detail="The log line names the file and torrent id. Delete + re-add that torrent in "
+           "decypharr; if it says \"can't retry re-insert\", repair will NOT fix it.",
+    signal="logs",
+    aggregations=[{"expression": "count()"}],
+    filt="service.name = 'decypharr' AND severity_text = 'ERROR' "
+         "AND body CONTAINS 'Failed to stream'",
+    evalw="15m", freq="5m", op="1", target=3.0, match="1",
+    labels={"service": "decypharr"},
+    channels=PIPELINE_CHANNELS,
 )
 
 # ---- host ----------------------------------------------------------------

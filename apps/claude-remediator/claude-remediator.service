@@ -1,0 +1,26 @@
+# systemd USER unit — runs as the login user so headless `claude` reuses the
+# existing ~/.claude credentials. Install:
+#   mkdir -p ~/.config/systemd/user
+#   ln -sf /opt/gitops/apps/claude-remediator/claude-remediator.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now claude-remediator
+#   loginctl enable-linger $USER    # keep it running when logged out
+#
+# REMEDIATOR_TOKEN comes from /opt/gitops/.env (shared secret, also embedded
+# in the SigNoz webhook channel URL).
+[Unit]
+Description=SigNoz alert -> headless Claude Code remediation session
+After=network-online.target docker.service
+
+[Service]
+Type=simple
+EnvironmentFile=/opt/gitops/.env
+Environment=REMEDIATOR_MODEL=sonnet
+ExecStart=/usr/bin/env python3 /opt/gitops/apps/claude-remediator/server.py
+SyslogIdentifier=claude-remediator
+Restart=on-failure
+RestartSec=10
+# PATH must include the claude CLI (~/.local/bin)
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=default.target
