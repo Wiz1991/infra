@@ -11,6 +11,11 @@ services:
     container_name: decypharr
     logging: *logging
     init: true
+    # Hard cap: with no limit it sat at 4-5G for days and peaked at 5.2G on
+    # 2026-09-16, which pushed the host into a swap-thrash livelock. Better to
+    # have the kernel OOM-kill this one container (docker restarts it) than
+    # lose the box.
+    mem_limit: 3g
     environment:
       - PUID=${PUID}
       - PGID=${PGID}

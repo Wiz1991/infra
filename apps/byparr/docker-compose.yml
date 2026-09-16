@@ -14,6 +14,8 @@ services:
       - service.name=byparr
       - service.namespace=debrid
     init: true
+    # Headless Firefox; observed up to 1.8G. Cap so a stuck solve can't eat the host.
+    mem_limit: 1500m
     environment:
       - LOG_LEVEL=debug
       - TZ=${TZ}

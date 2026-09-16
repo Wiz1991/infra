@@ -39,6 +39,9 @@ services:
     image: quay.io/prometheuscommunity/postgres-exporter:v0.17.1
     container_name: postgres_exporter
     logging: *logging
+    # Leaks ~50M/day (was at 915M before the 2026-09-16 hang, 20M fresh).
+    # Cap it; the OOM kill + restart is the cheapest fix.
+    mem_limit: 128m
     labels:
       - service.name=postgres_exporter
       - service.namespace=observability
