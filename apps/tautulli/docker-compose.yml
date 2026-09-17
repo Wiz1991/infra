@@ -7,7 +7,7 @@ x-logging: &logging
 
 services:
   tautulli:
-    image: lscr.io/linuxserver/tautulli:2.16.1
+    image: lscr.io/linuxserver/tautulli:2.18.1
     container_name: tautulli
     logging: *logging
     environment:

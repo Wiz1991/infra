@@ -7,7 +7,7 @@ x-logging: &logging
 
 services:
   traefik:
-    image: traefik:v3.6
+    image: traefik:v3.7
     container_name: traefik
     logging: *logging
     ports:

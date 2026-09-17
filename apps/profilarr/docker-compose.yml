@@ -7,7 +7,7 @@ x-logging: &logging
 
 services:
   profilarr_anime:
-    image: ghcr.io/dictionarry-hub/profilarr:2.0.7
+    image: ghcr.io/dictionarry-hub/profilarr:2.2.0
     container_name: profilarr_anime
     logging: *logging
     volumes:
@@ -40,7 +40,7 @@ services:
     restart: unless-stopped
 
   profilarr:
-    image: ghcr.io/dictionarry-hub/profilarr:2.0.7
+    image: ghcr.io/dictionarry-hub/profilarr:2.2.0
     container_name: profilarr
     logging: *logging
     volumes:

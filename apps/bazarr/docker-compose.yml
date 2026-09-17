@@ -7,7 +7,7 @@ x-logging: &logging
 
 services:
   bazarr:
-    image: lscr.io/linuxserver/bazarr:1.5.6
+    image: lscr.io/linuxserver/bazarr:1.6.1
     container_name: bazarr
     logging: *logging
     environment:

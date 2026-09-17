@@ -7,7 +7,7 @@ x-logging: &logging
 
 services:
   exportarr_sonarr:
-    image: ghcr.io/onedr0p/exportarr:v2.1.0
+    image: ghcr.io/onedr0p/exportarr:v2.3.0
     container_name: exportarr_sonarr
     logging: *logging
     labels:
@@ -25,7 +25,7 @@ services:
     restart: unless-stopped
 
   exportarr_radarr:
-    image: ghcr.io/onedr0p/exportarr:v2.1.0
+    image: ghcr.io/onedr0p/exportarr:v2.3.0
     container_name: exportarr_radarr
     logging: *logging
     labels:
@@ -43,7 +43,7 @@ services:
     restart: unless-stopped
 
   exportarr_prowlarr:
-    image: ghcr.io/onedr0p/exportarr:v2.1.0
+    image: ghcr.io/onedr0p/exportarr:v2.3.0
     container_name: exportarr_prowlarr
     logging: *logging
     labels:
@@ -61,7 +61,7 @@ services:
     restart: unless-stopped
 
   exportarr_bazarr:
-    image: ghcr.io/onedr0p/exportarr:v2.1.0
+    image: ghcr.io/onedr0p/exportarr:v2.3.0
     container_name: exportarr_bazarr
     logging: *logging
     labels:
